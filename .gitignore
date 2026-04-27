@@ -1,0 +1,18 @@
+# trained models
+models/*.keras
+models/*.pkl
+models/*.npy
+
+# data
+data/*.csv
+
+# cache
+__pycache__/
+*.pyc
+
+# env
+venv/
+.env
+
+# vscode optional
+.vscode/
