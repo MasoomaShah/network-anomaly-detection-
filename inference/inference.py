@@ -1,7 +1,7 @@
 """
 inference.py — LSTM Autoencoder Real-Time Inference
 ====================================================
-Runs on Raspberry Pi 4. Loads trained model + scaler,
+Runs on Raspberry Pi 4. Loads trained Keras model,
 collects live network metrics, detects anomalies via
 reconstruction error, and writes alerts to a JSON file
 for the agentic layer to consume.
@@ -15,7 +15,7 @@ Directory layout expected:
     │   └── metrics.py
     ├── models/
     │   ├── lstm_autoencoder.keras
-    │   └── scaler.pkl
+    │   └── threshold.npy
     └── data/
         └── alerts.json           ← agent reads this
 """
@@ -29,7 +29,6 @@ import datetime
 import collections
 
 import numpy as np
-import joblib
 import tensorflow as tf
 
 # ── path setup so we can import metrics.py from collector/ ──────────────────
@@ -40,8 +39,8 @@ sys.path.insert(0, COLLECTOR_DIR)
 from metrics import get_all_metrics          # your existing metrics.py
 
 # ── config ───────────────────────────────────────────────────────────────────
-MODEL_PATH  = os.path.join(BASE_DIR, "models", "lstm_autoencoder.keras")
-SCALER_PATH = os.path.join(BASE_DIR, "models", "scaler.pkl")
+MODEL_PATH  = os.path.join(BASE_DIR, "models", "lstm_autoencoder.h5")
+THRESHOLD_PATH = os.path.join(BASE_DIR, "models", "threshold.npy")
 ALERTS_PATH = os.path.join(BASE_DIR, "data",   "alerts.json")
 
 TIMESTEPS   = 60          # must match training (60 steps × 5 s = 5 min window)
@@ -66,41 +65,33 @@ log = logging.getLogger("inference")
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 def load_artifacts():
-    """Load model and scaler from disk. Crash early if files are missing."""
+    """Load Keras model and threshold from disk. Crash early if missing."""
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
             f"Model not found at {MODEL_PATH}\n"
             "Copy lstm_autoencoder.keras from Colab to models/ on the RPi."
         )
-    if not os.path.exists(SCALER_PATH):
-        raise FileNotFoundError(
-            f"Scaler not found at {SCALER_PATH}\n"
-            "Copy scaler.pkl from Colab to models/ on the RPi."
-        )
 
     log.info("Loading model  → %s", MODEL_PATH)
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+    model = tf.keras.models.load_model(MODEL_PATH, compile=False, custom_objects=None)
 
-    log.info("Loading scaler → %s", SCALER_PATH)
-    scaler = joblib.load(SCALER_PATH)
 
-    # Load threshold that was saved alongside the model
-    threshold_path = MODEL_PATH.replace(".keras", "_threshold.npy")
-    if os.path.exists(threshold_path):
-        threshold = float(np.load(threshold_path))
+    # Load threshold
+    if os.path.exists(THRESHOLD_PATH):
+        threshold = float(np.load(THRESHOLD_PATH))
         log.info("Loaded anomaly threshold: %.6f", threshold)
     else:
-        # Fallback: ask user to provide threshold manually
+        # Fallback: use env var or default
         threshold = float(
             os.environ.get("ANOMALY_THRESHOLD", 0.05)
         )
         log.warning(
-            "threshold file not found — using fallback %.6f. "
-            "Set env var ANOMALY_THRESHOLD or save a _threshold.npy file.",
+            "threshold.npy not found — using fallback %.6f. "
+            "Set env var ANOMALY_THRESHOLD or copy threshold.npy to models/.",
             threshold,
         )
 
-    return model, scaler, threshold
+    return model, threshold
 
 
 def collect_one_sample():
@@ -229,7 +220,7 @@ def main():
     print("   Building buffer of 60 samples before first prediction...")
     print("=" * 70)
 
-    model, scaler, threshold = load_artifacts()
+    model, threshold = load_artifacts()
 
     # Sliding window buffer — holds the last TIMESTEPS raw (unscaled) vectors
     buffer = collections.deque(maxlen=TIMESTEPS)
@@ -261,12 +252,11 @@ def main():
             time.sleep(max(0, INTERVAL_S - elapsed))
             continue
 
-        # 4. Scale the window
-        window_raw    = np.array(buffer)                  # (60, 8)
-        window_scaled = scaler.transform(window_raw).astype(np.float32)
+        # 4. Prepare the window (raw features, no scaler needed)
+        window = np.array(buffer, dtype=np.float32)       # (60, 8)
 
         # 5. Run inference
-        error = compute_reconstruction_error(model, window_scaled)
+        error = compute_reconstruction_error(model, window)
 
         # 6. Print status
         print_status_line(step, error, threshold, raw)
