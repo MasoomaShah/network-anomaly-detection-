@@ -2,6 +2,7 @@
 models/*.keras
 models/*.pkl
 models/*.npy
+models/*.h5
 
 # data
 data/*.csv
