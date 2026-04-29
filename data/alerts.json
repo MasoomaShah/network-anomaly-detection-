@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2026-04-28T21:16:08.455598",
+    "reconstruction_error": 1697.950439,
+    "threshold": 9.456097,
+    "error_ratio": 179.561,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 63.4,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.001,
+      "upload_mbps": 0.002,
+      "connected_devices": 2,
+      "dns_response_ms": 1.0,
+      "gateway_ping_ms": 8.25,
+      "jitter_ms": 21.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-04-28T21:17:21.053693",
+    "reconstruction_error": 1854.501099,
+    "threshold": 9.456097,
+    "error_ratio": 196.117,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 60.1,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.003,
+      "upload_mbps": 0.002,
+      "connected_devices": 1,
+      "dns_response_ms": 0.0,
+      "gateway_ping_ms": 10.75,
+      "jitter_ms": 21.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 3,
+    "timestamp": "2026-04-28T21:18:43.213643",
+    "reconstruction_error": 2042.988403,
+    "threshold": 9.456097,
+    "error_ratio": 216.05,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 76.8,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.001,
+      "upload_mbps": 0.001,
+      "connected_devices": 2,
+      "dns_response_ms": 1.08,
+      "gateway_ping_ms": 19.5,
+      "jitter_ms": 62.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-04-28T21:19:46.563560",
+    "reconstruction_error": 2091.52002,
+    "threshold": 9.456097,
+    "error_ratio": 221.182,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 85.8,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.003,
+      "upload_mbps": 0.003,
+      "connected_devices": 2,
+      "dns_response_ms": 1.0,
+      "gateway_ping_ms": 10.5,
+      "jitter_ms": 67.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 5,
+    "timestamp": "2026-04-28T21:21:08.556760",
+    "reconstruction_error": 2208.227051,
+    "threshold": 9.456097,
+    "error_ratio": 233.524,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 70.5,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.001,
+      "upload_mbps": 0.001,
+      "connected_devices": 2,
+      "dns_response_ms": 1.02,
+      "gateway_ping_ms": 15.25,
+      "jitter_ms": 47.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 6,
+    "timestamp": "2026-04-28T21:22:20.592792",
+    "reconstruction_error": 2259.415771,
+    "threshold": 9.456097,
+    "error_ratio": 238.937,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 63.1,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.051,
+      "upload_mbps": 0.142,
+      "connected_devices": 2,
+      "dns_response_ms": 0.0,
+      "gateway_ping_ms": 10.75,
+      "jitter_ms": 25.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 7,
+    "timestamp": "2026-04-28T21:23:24.224306",
+    "reconstruction_error": 2322.255371,
+    "threshold": 9.456097,
+    "error_ratio": 245.583,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 60.9,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.002,
+      "upload_mbps": 0.002,
+      "connected_devices": 2,
+      "dns_response_ms": 0.98,
+      "gateway_ping_ms": 11.5,
+      "jitter_ms": 29.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 8,
+    "timestamp": "2026-04-28T21:24:43.713538",
+    "reconstruction_error": 2498.766602,
+    "threshold": 9.456097,
+    "error_ratio": 264.249,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 61.0,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.009,
+      "upload_mbps": 0.002,
+      "connected_devices": 2,
+      "dns_response_ms": 0.96,
+      "gateway_ping_ms": 13.0,
+      "jitter_ms": 23.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 9,
+    "timestamp": "2026-04-28T21:25:56.742040",
+    "reconstruction_error": 2621.02124,
+    "threshold": 9.456097,
+    "error_ratio": 277.178,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 58.6,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.008,
+      "upload_mbps": 0.088,
+      "connected_devices": 2,
+      "dns_response_ms": 1.02,
+      "gateway_ping_ms": 15.5,
+      "jitter_ms": 18.0
+    },
+    "status": "pending"
+  },
+  {
+    "id": 10,
+    "timestamp": "2026-04-28T21:27:12.186347",
+    "reconstruction_error": 2799.507812,
+    "threshold": 9.456097,
+    "error_ratio": 296.053,
+    "anomaly_type": "unknown",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 72.7,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.01,
+      "upload_mbps": 0.0,
+      "connected_devices": 2,
+      "dns_response_ms": 1.02,
+      "gateway_ping_ms": 13.25,
+      "jitter_ms": 27.0
+    },
+    "status": "pending"
+  }
+]

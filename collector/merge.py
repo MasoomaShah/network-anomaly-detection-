@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-
+import joblib
 # -------------------------------
 # STEP 1: Load data safely
 # -------------------------------
@@ -39,13 +39,16 @@ lab_data = lab[features].values
 scaler = StandardScaler()
 
 # Fit on BOTH (so model sees full range)
-all_data = np.vstack([dorm_data, home_data])
+all_data = np.vstack([dorm_data, home_data, lab_data])
 scaler.fit(all_data)
 
 dorm_scaled = scaler.transform(dorm_data)
 home_scaled = scaler.transform(home_data)
 lab_scaled = scaler.transform(lab_data)
 
+# Save the scaler — this is the critical missing step
+joblib.dump(scaler, "../models/scaler.pkl")
+print("Scaler saved.")
 # -------------------------------
 # STEP 6: Create sequences
 # -------------------------------

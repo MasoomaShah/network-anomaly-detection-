@@ -2,7 +2,7 @@ import subprocess
 import socket
 import time
 import psutil
-
+import numpy as np 
 GATEWAY = "192.168.1.1"     
 NETWORK = "192.168.1.0/24"   
 PING_HOST = "8.8.8.8"
@@ -36,7 +36,7 @@ def get_latency_loss_jitter(host=PING_HOST, count=10):
 
         if times:
             latency = round(sum(times) / len(times), 2)
-            jitter = round(max(times) - min(times), 2)
+            jitter = round(np.std(times), 2)
 
         return latency, loss, jitter
 
