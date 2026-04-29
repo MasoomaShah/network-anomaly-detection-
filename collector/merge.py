@@ -46,9 +46,7 @@ dorm_scaled = scaler.transform(dorm_data)
 home_scaled = scaler.transform(home_data)
 lab_scaled = scaler.transform(lab_data)
 
-# Save the scaler — this is the critical missing step
-joblib.dump(scaler, "../models/scaler.pkl")
-print("Scaler saved.")
+
 # -------------------------------
 # STEP 6: Create sequences
 # -------------------------------
@@ -71,6 +69,10 @@ print("Final shape:", X.shape)
     # -------------------------------
 # SAVE SEQUENCES
 # -------------------------------
+# Save the scaler — this is the critical missing step
+joblib.dump(scaler, "../models/scaler.pkl")
+print("Scaler saved.")
+
 np.save("../data/X_sequences.npy", X)
 
 print("Saved X_sequences.npy")
