@@ -10,6 +10,7 @@ import json
 import html as html_lib
 import datetime
 import threading
+import time as _time
 
 # Path setup
 _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,6 +24,17 @@ from agent.config import (
 )
 from agent import memory
 from agent.trigger import trigger_demo, DEMO_SCENARIOS
+from dashboard.process_manager import (
+    start_monitoring, stop_monitoring, is_running, get_status,
+    read_log_tail,
+)
+
+# Auto-refresh (install: pip install streamlit-autorefresh)
+try:
+    from streamlit_autorefresh import st_autorefresh
+    HAS_AUTOREFRESH = True
+except ImportError:
+    HAS_AUTOREFRESH = False
 
 # ── Page Config ──────────────────────────────────────────────────────────
 st.set_page_config(
@@ -277,8 +289,105 @@ div.stButton > button:hover {
 }
 .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
 .empty-text { font-size: 0.85rem; }
+
+/* ── Log Drawer (HF-style) ─────────────────────────── */
+.log-drawer-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #0d1117;
+    border-top: 1px solid #30363d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0.45rem 1.2rem;
+    gap: 0.6rem;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+}
+.log-drawer-bar:hover { background: #161b22; }
+.log-drawer-arrow {
+    font-size: 0.7rem;
+    color: #8b949e;
+    transition: transform 0.25s;
+}
+.log-drawer-arrow.open { transform: rotate(180deg); }
+.log-drawer-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.log-drawer-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.log-drawer-dot.running { background: #3fb950; animation: pulse-dot 1.5s infinite; }
+.log-drawer-dot.stopped { background: #484f58; }
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.log-drawer-panel {
+    position: fixed;
+    bottom: 34px;
+    left: 0;
+    right: 0;
+    z-index: 9998;
+    background: #0d1117;
+    border-top: 1px solid #30363d;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+}
+.log-drawer-panel.open { max-height: 320px; }
+.log-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #21262d;
+    padding: 0 1rem;
+}
+.log-tab {
+    padding: 0.4rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #8b949e;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color 0.15s, border-color 0.15s;
+}
+.log-tab:hover { color: #c9d1d9; }
+.log-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+.log-content {
+    display: none;
+    height: 260px;
+    overflow-y: auto;
+    padding: 0.6rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.65;
+    color: #8b949e;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.log-content.active { display: block; }
+.log-content::-webkit-scrollbar { width: 4px; }
+.log-content::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+/* Push main content above drawer bar */
+.block-container { padding-bottom: 3rem !important; }
 </style>
 """, unsafe_allow_html=True)
+
+# ── Auto-refresh while monitoring ────────────────────────────────────────
+if HAS_AUTOREFRESH and is_running():
+    st_autorefresh(interval=4000, limit=None, key="monitor_refresh")
 
 
 # ── Data Loaders ─────────────────────────────────────────────────────────
@@ -382,13 +491,25 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("---")
-    st.markdown("**Trigger Mode**")
-    st.radio(
-        "mode",
-        ["Demo (manual)", "Rule-based", "LSTM watcher"],
-        index=0,
-        label_visibility="collapsed",
-    )
+
+    # ── Monitoring Controls ──────────────────────────────────────────
+    st.markdown("**Live Monitoring**")
+    proc_status = get_status()
+    monitoring_active = proc_status["overall"] == "running"
+
+    if monitoring_active:
+        inf_dot = "🟢" if proc_status["inference"] == "running" else "🔴"
+        agt_dot = "🟢" if proc_status["agent"] == "running" else "🔴"
+        st.caption(f"{inf_dot} Inference &nbsp; {agt_dot} Agent")
+        if st.button("⏹  Stop Monitoring", key="stop_mon", use_container_width=True):
+            stop_monitoring()
+            st.rerun()
+    else:
+        st.caption("Start inference + agent with one click.")
+        if st.button("▶  Start Monitoring", key="start_mon", use_container_width=True):
+            start_monitoring()
+            _time.sleep(1)  # let processes start
+            st.rerun()
 
     st.markdown("---")
     if st.button("🔄  Refresh", use_container_width=True):
@@ -596,3 +717,54 @@ with col_right:
             )
 
         st.markdown('<div class="sbox">' + "".join(rows) + '</div>', unsafe_allow_html=True)
+
+
+# ── Log Drawer (HF-style collapsible panel) ─────────────────────────────
+
+_drawer_running = is_running()
+_dot_cls = "running" if _drawer_running else "stopped"
+_inf_logs = esc(read_log_tail("inference", 80)) or "No inference logs yet. Click ▶ Start Monitoring."
+_agt_logs = esc(read_log_tail("agent", 80)) or "No agent logs yet. Click ▶ Start Monitoring."
+
+st.markdown(f'''
+<!-- Log Panel (hidden by default) -->
+<div class="log-drawer-panel" id="logPanel">
+  <div class="log-tabs">
+    <div class="log-tab active" id="tabInf" onclick="switchTab('inference')">Inference</div>
+    <div class="log-tab" id="tabAgt" onclick="switchTab('agent')">Agent</div>
+  </div>
+  <div class="log-content active" id="logInference">{_inf_logs}</div>
+  <div class="log-content" id="logAgent">{_agt_logs}</div>
+</div>
+
+<!-- Toggle Bar (always visible at bottom) -->
+<div class="log-drawer-bar" id="logBar" onclick="toggleDrawer()">
+  <span class="log-drawer-arrow" id="logArrow">▲</span>
+  <span class="log-drawer-dot {_dot_cls}"></span>
+  <span class="log-drawer-title">Logs</span>
+</div>
+
+<script>
+function toggleDrawer() {{
+    const panel = document.getElementById('logPanel');
+    const arrow = document.getElementById('logArrow');
+    panel.classList.toggle('open');
+    arrow.classList.toggle('open');
+    // Auto-scroll logs to bottom when opened
+    if (panel.classList.contains('open')) {{
+        document.querySelectorAll('.log-content').forEach(el => {{
+            el.scrollTop = el.scrollHeight;
+        }});
+    }}
+}}
+function switchTab(tab) {{
+    document.getElementById('tabInf').classList.toggle('active', tab === 'inference');
+    document.getElementById('tabAgt').classList.toggle('active', tab === 'agent');
+    document.getElementById('logInference').classList.toggle('active', tab === 'inference');
+    document.getElementById('logAgent').classList.toggle('active', tab === 'agent');
+    // Scroll to bottom of active tab
+    const active = document.querySelector('.log-content.active');
+    if (active) active.scrollTop = active.scrollHeight;
+}}
+</script>
+''', unsafe_allow_html=True)
