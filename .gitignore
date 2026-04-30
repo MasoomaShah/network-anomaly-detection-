@@ -6,6 +6,9 @@ models/*.h5
 
 # data
 data/*.csv
+data/agent_log.json
+data/agent_state.json
+data/live_metrics.json
 
 # cache
 __pycache__/

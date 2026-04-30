@@ -1,0 +1,96 @@
+{
+  "_comment": "Add your trusted devices here. Run 'arp -a' to find MACs on your network.",
+  "trusted": [
+    {
+      "mac": "14:84:77:95:4E:1E",
+      "ip": "10.1.160.1",
+      "name": "Default Gateway / Router",
+      "type": "router",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "FF:FF:FF:FF:FF:FF",
+      "ip": "10.1.163.255",
+      "name": "Subnet Broadcast (10.1.x.x)",
+      "type": "broadcast",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "01:00:5E:00:00:16",
+      "ip": "224.0.0.22",
+      "name": "IGMPv3 Multicast",
+      "type": "multicast",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "01:00:5E:00:00:FB",
+      "ip": "224.0.0.251",
+      "name": "mDNS Multicast",
+      "type": "multicast",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "01:00:5E:00:00:FC",
+      "ip": "224.0.0.252",
+      "name": "LLMNR Multicast",
+      "type": "multicast",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "01:00:5E:7F:FF:FA",
+      "ip": "239.255.255.250",
+      "name": "SSDP/UPnP Multicast",
+      "type": "multicast",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "FF:FF:FF:FF:FF:FF",
+      "ip": "255.255.255.255",
+      "name": "Global Broadcast",
+      "type": "broadcast",
+      "interface": "10.1.162.239"
+    },
+    {
+      "mac": "FF:FF:FF:FF:FF:FF",
+      "ip": "172.24.15.255",
+      "name": "WSL Subnet Broadcast",
+      "type": "broadcast",
+      "interface": "172.24.0.1"
+    },
+    {
+      "mac": "01:00:5E:00:00:16",
+      "ip": "224.0.0.22",
+      "name": "IGMPv3 Multicast (WSL)",
+      "type": "multicast",
+      "interface": "172.24.0.1"
+    },
+    {
+      "mac": "01:00:5E:00:00:FB",
+      "ip": "224.0.0.251",
+      "name": "mDNS Multicast (WSL)",
+      "type": "multicast",
+      "interface": "172.24.0.1"
+    },
+    {
+      "mac": "01:00:5E:00:00:FC",
+      "ip": "224.0.0.252",
+      "name": "LLMNR Multicast (WSL)",
+      "type": "multicast",
+      "interface": "172.24.0.1"
+    },
+    {
+      "mac": "01:00:5E:7F:FF:FA",
+      "ip": "239.255.255.250",
+      "name": "SSDP/UPnP Multicast (WSL)",
+      "type": "multicast",
+      "interface": "172.24.0.1"
+    },
+    {
+      "mac": "FF:FF:FF:FF:FF:FF",
+      "ip": "255.255.255.255",
+      "name": "Global Broadcast (WSL)",
+      "type": "broadcast",
+      "interface": "172.24.0.1"
+    }
+  ]
+}
