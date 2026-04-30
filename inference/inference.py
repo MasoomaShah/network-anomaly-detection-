@@ -51,7 +51,7 @@ ALERTS_PATH    = os.path.join(BASE_DIR, "data",   "alerts.json")
 TIMESTEPS  = 60
 N_FEATURES = 8
 INTERVAL_S = 5
-COOLDOWN_S = 60
+COOLDOWN_S = 10
 
 FEATURES = [
     "latency_ms", "packet_loss_pct", "download_mbps", "upload_mbps",
@@ -159,7 +159,7 @@ def classify_anomaly(raw_metrics, error=None, threshold=None):
     elif gw > 200 or gw >= 999:
         anomaly_type = "gateway_unreachable"
         severity     = "high"
-    elif dns > 2000:
+    elif dns >= 2000:
         anomaly_type = "dns_failure"
         severity     = "high"
     elif dl > 80 or ul > 40:
@@ -281,19 +281,25 @@ def main():
             error        = None
             lstm_anomaly = False
 
-        # 4. Rule-based check (always runs, independent of LSTM)
+            # 4. Rule-based check (always runs)
         rule_classification = classify_anomaly(raw, error, threshold)
 
         # 5. Decide trigger source
-        #    LSTM fires first if working; rules are always the safety net
         trigger_classification = None
         if lstm_anomaly:
-            c = classify_anomaly(raw, error, threshold)
-            if c:
-                c["source"] = "lstm"
+            if rule_classification:
+                # LSTM fired AND rules agree — best case, use rule label
+                rule_classification["source"] = "lstm"
+                trigger_classification = rule_classification
             else:
-                c = {"anomaly_type": "lstm_detected", "severity": "medium", "source": "lstm"}
-            trigger_classification = c
+                # LSTM fired but metrics look okay — network is recovering
+                # Only alert if error is significantly above threshold
+                if error > threshold * 1.2:   # 20% buffer to avoid borderline noise
+                    trigger_classification = {
+                        "anomaly_type": "lstm_detected",
+                        "severity": "medium",
+                        "source": "lstm"
+                    }
         elif rule_classification:
             rule_classification["source"] = "rule_based"
             trigger_classification = rule_classification
