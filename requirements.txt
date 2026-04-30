@@ -1,0 +1,31 @@
+# ── Core ─────────────────────────────────────────────────
+numpy
+pandas
+psutil
+scikit-learn
+
+# ── Deep Learning ────────────────────────────────────────
+tensorflow
+
+# ── Agent / LLM ──────────────────────────────────────────
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-groq
+langchain-community
+langchain-openai
+python-dotenv
+
+# ── Dashboard ────────────────────────────────────────────
+streamlit
+streamlit-autorefresh
+
+# ── Network Tools ────────────────────────────────────────
+python-nmap
+speedtest-cli
+scapy
+
+# ── Serialization ────────────────────────────────────────
+joblib
+
+# ── Visualization (training) ────────────────────────────
+matplotlib
