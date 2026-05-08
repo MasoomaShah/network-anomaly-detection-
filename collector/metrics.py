@@ -1,6 +1,7 @@
 import subprocess
 import socket
 import time
+import os
 import psutil
 import numpy as np 
 GATEWAY = "192.168.1.1"     
@@ -8,7 +9,12 @@ NETWORK = "192.168.1.0/24"
 PING_HOST = "8.8.8.8"
 DNS_TEST_DOMAIN = "google.com"
 
-def get_latency_loss_jitter(host=PING_HOST, count=10):
+# ── Ensure nmap is discoverable ──────────────────────────────────────────────
+NMAP_DIR = r"C:\Program Files (x86)\Nmap"
+if os.path.isdir(NMAP_DIR) and NMAP_DIR not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = NMAP_DIR + os.pathsep + os.environ.get("PATH", "")
+
+def get_latency_loss_jitter(host=PING_HOST, count=20):
     """Single ping batch — returns latency, packet loss, jitter"""
     try:
         result = subprocess.run(
@@ -97,7 +103,12 @@ def get_connected_devices(network=NETWORK):
     """Counts devices on network using nmap"""
     try:
         import nmap
-        nm = nmap.PortScanner()
+        # Try with explicit path first, then fall back to PATH
+        nmap_path = os.path.join(NMAP_DIR, "nmap.exe") if os.path.isfile(os.path.join(NMAP_DIR, "nmap.exe")) else None
+        if nmap_path:
+            nm = nmap.PortScanner(nmap_search_path=(nmap_path,))
+        else:
+            nm = nmap.PortScanner()
         nm.scan(hosts=network, arguments="-sn")
         return len(nm.all_hosts())
     except Exception as e:

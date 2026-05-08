@@ -3,8 +3,11 @@ inference.py — LSTM Autoencoder Real-Time Inference
 ====================================================
 Runs on Raspberry Pi 4. Loads trained Keras model,
 collects live network metrics, detects anomalies via
-reconstruction error AND rule-based fallback, and writes
-alerts to a JSON file for the agentic layer to consume.
+LSTM reconstruction error as the PRIMARY method,
+with rule-based classification to label the anomaly type.
+
+The LSTM decides IF there's an anomaly.
+The rule-based logic decides WHAT KIND of anomaly it is.
 
 Directory layout expected:
     project/
@@ -16,7 +19,7 @@ Directory layout expected:
     ├── models/
     │   ├── lstm_autoencoder.h5
     │   ├── threshold.npy
-    │   └── scaler.pkl            ← optional but fixes the 200x error
+    │   └── scaler.pkl            ← StandardScaler from training
     └── data/
         └── alerts.json           ← agent reads this
 """
@@ -31,7 +34,6 @@ import collections
 
 import numpy as np
 import tensorflow as tf
-from sklearn.preprocessing import MinMaxScaler
 import joblib
 
 # ── path setup ───────────────────────────────────────────────────────────────
@@ -39,19 +41,37 @@ BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COLLECTOR_DIR = os.path.join(BASE_DIR, "collector")
 sys.path.insert(0, COLLECTOR_DIR)
 
-from metrics import get_all_metrics
+from metrics import get_all_metrics  # type: ignore  (resolved via sys.path above)
 
 # ── paths ────────────────────────────────────────────────────────────────────
-MODEL_PATH     = os.path.join(BASE_DIR, "models", "lstm_autoencoder.h5")
-THRESHOLD_PATH = os.path.join(BASE_DIR, "models", "threshold.npy")
-SCALER_PATH    = os.path.join(BASE_DIR, "models", "scaler.pkl")
-ALERTS_PATH    = os.path.join(BASE_DIR, "data",   "alerts.json")
+MODEL_PATH        = os.path.join(BASE_DIR, "models", "lstm_autoencoder.h5")
+THRESHOLD_PATH    = os.path.join(BASE_DIR, "models", "threshold.npy")
+SCALER_PATH       = os.path.join(BASE_DIR, "models", "scaler.pkl")
+ALERTS_PATH       = os.path.join(BASE_DIR, "data",   "alerts.json")
+LIVE_METRICS_PATH = os.path.join(BASE_DIR, "data",   "live_metrics.json")
 
 # ── config ───────────────────────────────────────────────────────────────────
 TIMESTEPS  = 60
 N_FEATURES = 8
 INTERVAL_S = 5
-COOLDOWN_S = 10
+COOLDOWN_S = 60
+
+# ── LSTM threshold tuning ────────────────────────────────────────────────────
+# The model's baseline reconstruction error depends on the specific network
+# it runs on.  Instead of a fixed scale factor, we auto-calibrate:
+#
+# Phase 1 (calibration): First CALIBRATION_SAMPLES samples establish the
+#     baseline error on THIS network.  During calibration we use the raw
+#     threshold from training (threshold.npy) as a safety net.
+# Phase 2 (adaptive):    threshold = baseline_mean + ADAPTIVE_SIGMA × std
+#     This catches real anomalies while ignoring the normal error level.
+#
+# ADAPTIVE_SIGMA controls sensitivity:
+#   4.0 = catches clear anomalies (recommended)
+#   3.0 = more sensitive (may have some false positives)
+#   5.0 = very conservative (only catches severe anomalies)
+CALIBRATION_SAMPLES = 20          # samples to establish baseline
+ADAPTIVE_SIGMA      = 4.0         # mean + 4σ = anomaly
 
 FEATURES = [
     "latency_ms", "packet_loss_pct", "download_mbps", "upload_mbps",
@@ -74,7 +94,7 @@ def load_artifacts():
     Load model, threshold, and scaler.
     - model    : required (crashes if missing)
     - threshold: required (crashes if missing)
-    - scaler   : optional (logs warning if missing — results will be worse)
+    - scaler   : required for proper LSTM operation (crashes if missing)
     """
     # 1. Model
     if not os.path.exists(MODEL_PATH):
@@ -83,7 +103,22 @@ def load_artifacts():
             "Copy lstm_autoencoder.h5 from Colab to models/ on the RPi."
         )
     log.info("Loading model → %s", MODEL_PATH)
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+
+    # ── Fix Keras 3.x cross-version quantization_config issue ──
+    # Models saved with certain Keras 3.x versions embed 'quantization_config'
+    # in Dense layer configs.  If the *loading* Keras doesn't expect that key,
+    # deserialization crashes.  Monkey-patch Dense.__init__ to strip it.
+    _orig_dense_init = tf.keras.layers.Dense.__init__
+
+    def _patched_dense_init(self, *args, **kwargs):
+        kwargs.pop("quantization_config", None)
+        _orig_dense_init(self, *args, **kwargs)
+
+    tf.keras.layers.Dense.__init__ = _patched_dense_init
+    try:
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+    finally:
+        tf.keras.layers.Dense.__init__ = _orig_dense_init   # restore
 
     # 2. Threshold
     if not os.path.exists(THRESHOLD_PATH):
@@ -91,22 +126,21 @@ def load_artifacts():
             f"Threshold not found at {THRESHOLD_PATH}\n"
             "Copy threshold.npy from Colab to models/ on the RPi."
         )
-    threshold = float(np.load(THRESHOLD_PATH))
-    log.info("Loaded anomaly threshold: %.6f", threshold)
+    raw_threshold = float(np.load(THRESHOLD_PATH).item())
+    log.info("Loaded training threshold: %.6f (used as safety net during calibration)",
+             raw_threshold)
 
-    # 3. Scaler (optional but strongly recommended)
-    if os.path.exists(SCALER_PATH):
-        scaler = joblib.load(SCALER_PATH)
-        log.info("Scaler loaded → %s", SCALER_PATH)
-    else:
-        scaler = None
-        log.warning(
-            "scaler.pkl not found — inference will run on raw values. "
-            "This causes inflated reconstruction errors (200x+). "
-            "Save your scaler in Colab: joblib.dump(scaler, 'scaler.pkl')"
+    # 3. Scaler (required — the model was trained on StandardScaler-normalized data)
+    if not os.path.exists(SCALER_PATH):
+        raise FileNotFoundError(
+            f"Scaler not found at {SCALER_PATH}\n"
+            "The LSTM model requires scaler.pkl (StandardScaler) from training.\n"
+            "Save it in Colab: joblib.dump(scaler, 'scaler.pkl')"
         )
+    scaler = joblib.load(SCALER_PATH)
+    log.info("Scaler loaded → %s  (type=%s)", SCALER_PATH, type(scaler).__name__)
 
-    return model, threshold, scaler
+    return model, raw_threshold, scaler
 
 
 def collect_one_sample():
@@ -119,26 +153,41 @@ def collect_one_sample():
     return raw, vec
 
 
-def compute_reconstruction_error(model, window, scaler=None):
+def save_live_metrics(raw_metrics):
+    """Write latest metrics to live_metrics.json for the dashboard to display."""
+    os.makedirs(os.path.dirname(LIVE_METRICS_PATH), exist_ok=True)
+    data = {
+        "timestamp": datetime.datetime.now().isoformat(),
+        "metrics": {k: round(float(v), 3) if isinstance(v, float) else v
+                    for k, v in raw_metrics.items() if k != "timestamp"},
+    }
+    try:
+        with open(LIVE_METRICS_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        log.error("Failed to write live_metrics.json: %s", e)
+
+
+def compute_reconstruction_error(model, window, scaler):
     """
     window : (TIMESTEPS, N_FEATURES) raw values
-    Scales if scaler provided, then runs model inference.
+    Scales with the StandardScaler, then runs model inference.
     Returns scalar MSE.
     """
-    if scaler is not None:
-        window = scaler.transform(window.reshape(-1, N_FEATURES)).reshape(TIMESTEPS, N_FEATURES)
-
-    x     = window[np.newaxis, ...]        # (1, 60, 8)
-    x_hat = model.predict(x, verbose=0)   # (1, 60, 8)
-    error = float(np.mean(np.square(x - x_hat)))
+    scaled = scaler.transform(window.reshape(-1, N_FEATURES)).reshape(TIMESTEPS, N_FEATURES)
+    x      = scaled[np.newaxis, ...]          # (1, 60, 8)
+    x_hat  = model.predict(x, verbose=0)      # (1, 60, 8)
+    error  = float(np.mean(np.square(x - x_hat)))
     return error
 
 
-def classify_anomaly(raw_metrics, error=None, threshold=None):
+def classify_anomaly_type(raw_metrics):
     """
-    Rule-based anomaly classifier.
-    Works independently of LSTM — used as primary or fallback trigger.
-    Returns dict with anomaly_type and severity, or None if no anomaly.
+    Rule-based anomaly CLASSIFIER — determines the TYPE of anomaly.
+    This does NOT decide if there's an anomaly (that's the LSTM's job).
+    It just labels what kind of anomaly the LSTM detected.
+
+    Returns dict with anomaly_type and severity, or None if metrics look normal.
     """
     lat  = raw_metrics.get("latency_ms",        0)
     loss = raw_metrics.get("packet_loss_pct",   0)
@@ -153,30 +202,30 @@ def classify_anomaly(raw_metrics, error=None, threshold=None):
     severity     = "medium"
 
     # Priority order — first match wins
-    if loss > 20:
+    if loss > 5:
         anomaly_type = "high_packet_loss"
-        severity     = "high" if loss > 50 else "medium"
-    elif gw > 200 or gw >= 999:
+        severity     = "high" if loss > 15 else "medium"
+    elif gw > 100 or gw >= 999:
         anomaly_type = "gateway_unreachable"
-        severity     = "high"
-    elif dns >= 2000:
+        severity     = "high" if gw > 500 else "medium"
+    elif dns >= 1000:
         anomaly_type = "dns_failure"
-        severity     = "high"
+        severity     = "high" if dns >= 3000 else "medium"
     elif dl > 80 or ul > 40:
         anomaly_type = "bandwidth_saturation"
         severity     = "medium"
-    elif lat > 300:
+    elif lat > 150:
         anomaly_type = "high_latency"
-        severity     = "medium" if lat < 600 else "high"
-    elif jit > 150:
+        severity     = "medium" if lat < 300 else "high"
+    elif jit > 80:
         anomaly_type = "high_jitter"
-        severity     = "low"
-    elif dev > 15:
+        severity     = "low" if jit < 150 else "medium"
+    elif dev > 10:
         anomaly_type = "unexpected_devices"
         severity     = "medium"
 
     if anomaly_type is None:
-        return None   # no anomaly — return None instead of "unknown"
+        return None
 
     return {"anomaly_type": anomaly_type, "severity": severity}
 
@@ -202,7 +251,7 @@ def write_alert(raw_metrics, error, threshold, classification):
         "error_ratio":          round(error / threshold, 3) if (error and threshold) else None,
         "anomaly_type":         classification["anomaly_type"],
         "severity":             classification["severity"],
-        "trigger_source":       classification.get("source", "rule_based"),
+        "trigger_source":       classification.get("source", "lstm"),
         "metrics":              {k: round(float(v), 3) for k, v in raw_metrics.items()
                                  if k != "timestamp"},
         "status":               "pending",
@@ -215,14 +264,16 @@ def write_alert(raw_metrics, error, threshold, classification):
     return alert
 
 
-def print_status_line(step, error, threshold, raw, trigger):
+def print_status_line(step, error, threshold, raw, trigger, warming=False):
     """Live status line printed every sample."""
-    if trigger:
-        flag = f"🔴 ANOMALY [{trigger}]"
+    if warming:
+        flag = "[..] warmup"
+    elif trigger:
+        flag = f"[!] ANOMALY [{trigger}]"
     else:
-        flag = "🟢 normal "
+        flag = "[OK] normal "
 
-    err_str = f"err={error:.3f} thr={threshold:.3f}" if error else "rule-trigger"
+    err_str = f"err={error:.3f} thr={threshold:.3f}" if error else "no-error"
     print(
         f"[{step:>5}] {flag} | {err_str} | "
         f"lat={raw['latency_ms']:>7.1f}ms "
@@ -239,14 +290,22 @@ def print_status_line(step, error, threshold, raw, trigger):
 
 def main():
     print("=" * 70)
-    print("   Network Anomaly Inference — LSTM + Rule-Based Fallback")
+    print("   Network Anomaly Inference — LSTM Primary + Rule-Based Labeling")
     print("=" * 70)
 
     model, threshold, scaler = load_artifacts()
 
     buffer          = collections.deque(maxlen=TIMESTEPS)
+    error_history   = collections.deque(maxlen=200)   # for adaptive threshold
     last_alert_time = 0
     step            = 0
+    prefilled       = False
+    active_threshold = threshold   # may be updated adaptively
+    consecutive_normal_metrics = 0  # tracks how many samples in a row have normal metrics
+
+    # How many consecutive normal-metric samples before we flush the buffer
+    # to stop the LSTM from echoing old anomaly data
+    BUFFER_FLUSH_AFTER = 3
 
     while True:
         loop_start = time.time()
@@ -259,73 +318,117 @@ def main():
             time.sleep(INTERVAL_S)
             continue
 
+        # ── Always write live metrics so dashboard stays real-time ──
+        save_live_metrics(raw)
+
         buffer.append(vec)
         step += 1
 
-        # 2. Warm-up period
-        if len(buffer) < TIMESTEPS:
-            remaining = TIMESTEPS - len(buffer)
-            print(f"  Warming up buffer … {len(buffer)}/{TIMESTEPS} "
-                  f"({remaining * INTERVAL_S}s remaining)")
-            elapsed = time.time() - loop_start
-            time.sleep(max(0, INTERVAL_S - elapsed))
-            continue
+        # 2. Pre-fill buffer on first sample to eliminate long warm-up
+        #    Repeats the first reading to fill the window immediately.
+        #    LSTM accuracy improves as real data replaces the copies.
+        if not prefilled and len(buffer) == 1:
+            log.info("Pre-filling buffer with first sample (%d copies) "
+                     "→ LSTM inference starts immediately", TIMESTEPS - 1)
+            for _ in range(TIMESTEPS - 1):
+                buffer.append(vec.copy())
+            prefilled = True
 
-        # 3. LSTM inference
-        window = np.array(buffer, dtype=np.float32)
-        try:
-            error = compute_reconstruction_error(model, window, scaler)
-            lstm_anomaly = error > threshold
-        except Exception as e:
-            log.error("LSTM inference failed: %s", e)
-            error        = None
-            lstm_anomaly = False
+        # 3. Check if current metrics look normal (for buffer echo detection)
+        rule_label = classify_anomaly_type(raw)
+        if rule_label is None:
+            consecutive_normal_metrics += 1
+        else:
+            consecutive_normal_metrics = 0
 
-            # 4. Rule-based check (always runs)
-        rule_classification = classify_anomaly(raw, error, threshold)
+        # 4. LSTM inference (PRIMARY anomaly detection)
+        error = None
+        lstm_anomaly = False
+        if len(buffer) >= TIMESTEPS:
+            window = np.array(buffer, dtype=np.float32)
+            try:
+                error = compute_reconstruction_error(model, window, scaler)
+                error_history.append(error)
 
-        # 5. Decide trigger source
+                # Adaptive threshold: auto-calibrate to this network's baseline
+                if len(error_history) >= CALIBRATION_SAMPLES:
+                    errors_arr = np.array(error_history)
+                    baseline_mean = float(np.mean(errors_arr))
+                    baseline_std  = float(np.std(errors_arr))
+                    # Threshold = baseline + N × sigma
+                    # Ensures normal traffic never triggers, only real anomalies
+                    active_threshold = baseline_mean + ADAPTIVE_SIGMA * max(baseline_std, 0.5)
+                    # Safety floor: at least 1.0 above baseline
+                    active_threshold = max(active_threshold, baseline_mean + 1.0)
+
+                lstm_anomaly = error > active_threshold
+
+            except Exception as e:
+                log.error("LSTM inference failed: %s", e)
+                error        = None
+                lstm_anomaly = False
+
+        # 5. Buffer echo detection: LSTM fires but metrics are normal
+        #    This means the sliding window still has old bad data.
+        #    Flush the buffer with current (normal) sample to reset.
+        if lstm_anomaly and consecutive_normal_metrics >= BUFFER_FLUSH_AFTER:
+            log.info("Buffer echo detected (LSTM error=%.3f but metrics normal for %d samples) "
+                     "→ flushing buffer with current normal data",
+                     error, consecutive_normal_metrics)
+            buffer.clear()
+            for _ in range(TIMESTEPS):
+                buffer.append(vec.copy())
+            error_history.clear()
+            active_threshold = threshold  # reset to static threshold
+            lstm_anomaly = False  # suppress this false alert
+
+        # 6. If LSTM says anomaly → classify what type using rules
         trigger_classification = None
         if lstm_anomaly:
-            if rule_classification:
-                # LSTM fired AND rules agree — best case, use rule label
-                rule_classification["source"] = "lstm"
-                trigger_classification = rule_classification
+            if rule_label:
+                # LSTM detected + rules can label it
+                rule_label["source"] = "lstm"
+                trigger_classification = rule_label
             else:
-                # LSTM fired but metrics look okay — network is recovering
-                # Only alert if error is significantly above threshold
-                if error > threshold * 1.2:   # 20% buffer to avoid borderline noise
-                    trigger_classification = {
-                        "anomaly_type": "lstm_detected",
-                        "severity": "medium",
-                        "source": "lstm"
-                    }
-        elif rule_classification:
-            rule_classification["source"] = "rule_based"
-            trigger_classification = rule_classification
+                # LSTM fired but rules can't label it — still an anomaly!
+                # The model sees a pattern deviation the rules don't cover
+                trigger_classification = {
+                    "anomaly_type": "lstm_detected_anomaly",
+                    "severity": "high" if error > active_threshold * 2 else "medium",
+                    "source": "lstm",
+                }
 
-        # 6. Print status
+        # 5. Print status
         trigger_label = trigger_classification["anomaly_type"] if trigger_classification else None
-        print_status_line(step, error, threshold, raw, trigger_label)
+        print_status_line(step, error, active_threshold, raw, trigger_label)
 
-        # 7. Write alert with cooldown
+        # 6. Write alert with cooldown
         if trigger_classification:
             now = time.time()
             if (now - last_alert_time) >= COOLDOWN_S:
-                alert = write_alert(raw, error, threshold, trigger_classification)
+                alert = write_alert(raw, error, active_threshold, trigger_classification)
                 last_alert_time = now
                 log.warning(
-                    "ANOMALY ALERT #%d → type=%s  severity=%s  source=%s",
+                    "🚨 LSTM ANOMALY ALERT #%d → type=%s  severity=%s  "
+                    "error=%.4f  threshold=%.4f  ratio=%.2fx",
                     alert["id"],
                     trigger_classification["anomaly_type"],
                     trigger_classification["severity"],
-                    trigger_classification["source"],
+                    error, active_threshold, error / active_threshold,
                 )
             else:
                 secs_left = int(COOLDOWN_S - (now - last_alert_time))
-                log.info("Anomaly detected but in cooldown (%ds left)", secs_left)
+                log.info("LSTM anomaly detected but in cooldown (%ds left)", secs_left)
 
-        # 8. Sleep
+        # Log adaptive threshold updates periodically
+        if step % 50 == 0 and len(error_history) >= CALIBRATION_SAMPLES:
+            log.info("Adaptive threshold: %.4f  (baseline_mean=%.4f, baseline_std=%.4f, samples=%d)",
+                     active_threshold,
+                     float(np.mean(list(error_history))),
+                     float(np.std(list(error_history))),
+                     len(error_history))
+
+        # 7. Sleep
         elapsed = time.time() - loop_start
         time.sleep(max(0, INTERVAL_S - elapsed))
 

@@ -118,7 +118,7 @@ def run_rule_based(interval: int = 10, cooldown: int = 60):
     interval: seconds between checks
     cooldown: minimum seconds between agent triggers
     """
-    from metrics import get_all_metrics
+    from metrics import get_all_metrics  # type: ignore
 
     log.info("Starting RULE-BASED trigger (interval=%ds, cooldown=%ds)", interval, cooldown)
     memory.write_state("idle")
@@ -159,10 +159,12 @@ def run_lstm_watcher(poll_interval: int = 3):
     """
     Watch alerts.json for new 'pending' alerts written by inference.py.
     When found, trigger the agent.
+    Only ONE agent investigation runs at a time to avoid Groq rate-limit flooding.
     """
     log.info("Starting LSTM WATCHER (polling alerts.json every %ds)", poll_interval)
     memory.write_state("idle")
     processed_ids = set()
+    _active_thread = None   # track the currently running agent thread
 
     # Load already-processed IDs
     if os.path.exists(ALERTS_PATH):
@@ -175,6 +177,9 @@ def run_lstm_watcher(poll_interval: int = 3):
 
     while True:
         try:
+            # Check if the previous agent investigation is still running
+            agent_busy = _active_thread is not None and _active_thread.is_alive()
+
             if os.path.exists(ALERTS_PATH):
                 with open(ALERTS_PATH, "r") as f:
                     alerts = json.load(f)
@@ -183,9 +188,21 @@ def run_lstm_watcher(poll_interval: int = 3):
                     aid = alert.get("id")
                     if aid not in processed_ids and alert.get("status") == "pending":
                         processed_ids.add(aid)
+
+                        if agent_busy:
+                            log.info("Skipping alert #%d (%s) — agent already investigating",
+                                     aid, alert.get("anomaly_type"))
+                            continue
+
                         log.warning("New LSTM alert #%d: %s", aid, alert.get("anomaly_type"))
-                        thread = threading.Thread(target=run_agent, args=(alert,), daemon=True)
-                        thread.start()
+                        # Update dashboard with the alert's metrics
+                        if alert.get("metrics"):
+                            _save_live_metrics(alert["metrics"])
+                        _active_thread = threading.Thread(
+                            target=run_agent, args=(alert,), daemon=True
+                        )
+                        _active_thread.start()
+                        agent_busy = True   # block further alerts this cycle
 
             time.sleep(poll_interval)
 
