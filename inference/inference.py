@@ -40,6 +40,8 @@ import joblib
 BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COLLECTOR_DIR = os.path.join(BASE_DIR, "collector")
 sys.path.insert(0, COLLECTOR_DIR)
+sys.path.insert(0, BASE_DIR)
+
 
 from metrics import get_all_metrics  # type: ignore  (resolved via sys.path above)
 
