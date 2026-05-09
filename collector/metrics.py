@@ -107,28 +107,19 @@ def get_gateway_ping(gateway=GATEWAY):
 
 
 def get_connected_devices(network=NETWORK):
-    """Counts devices on network using nmap"""
+    """Fast device count using ARP table (nmap is too slow for real-time)"""
     try:
-        import nmap
-        # Try with explicit path first, then fall back to PATH
-        nmap_path = os.path.join(NMAP_DIR, "nmap.exe") if os.path.isfile(os.path.join(NMAP_DIR, "nmap.exe")) else None
-        if nmap_path:
-            nm = nmap.PortScanner(nmap_search_path=(nmap_path,))
-        else:
-            nm = nmap.PortScanner()
-        nm.scan(hosts=network, arguments="-sn")
-        return len(nm.all_hosts())
+        result = subprocess.run(
+            ["arp", "-a"], capture_output=True, text=True, timeout=5
+        )
+        # Filter for actual dynamic entries
+        lines = [l for l in result.stdout.split("\n")
+                 if "dynamic" in l.lower() or ("-" in l and ":" in l)]
+        return max(1, len(lines))
     except Exception as e:
-        print(f"[nmap error] {e}")
-        try:
-            result = subprocess.run(
-                ["arp", "-a"], capture_output=True, text=True
-            )
-            lines = [l for l in result.stdout.split("\n")
-                     if "dynamic" in l.lower() or "---" not in l]
-            return max(1, len(lines) - 2)
-        except:
-            return 0
+        print(f"[device scan error] {e}")
+        return 0
+
 
 
 def get_all_metrics():
@@ -136,11 +127,12 @@ def get_all_metrics():
     if PI_HOST:
         url = f"http://{PI_HOST}:{PI_PORT}/metrics"
         try:
-            resp = requests.get(url, timeout=5)
+            resp = requests.get(url, timeout=30)  # Increased timeout to 30s
             resp.raise_for_status()
             return resp.json()
         except Exception as e:
             print(f"[Pi metrics error] {e} — falling back to local collection")
+
 
     latency, loss, jitter = get_latency_loss_jitter()
     download, upload = get_bandwidth()
