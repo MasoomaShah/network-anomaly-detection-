@@ -23,7 +23,7 @@ from agent.config import (
     LIVE_METRICS_PATH, get_llm_display_name,
 )
 from agent import memory
-from agent.trigger import trigger_demo, DEMO_SCENARIOS
+from agent.trigger import inject_demo_alert, DEMO_SCENARIOS
 from dashboard.process_manager import (
     start_monitoring, stop_monitoring, is_running, get_status,
     read_log_tail,
@@ -412,8 +412,67 @@ with st.sidebar:
     st.caption(f"LLM: {get_llm_display_name()}")
     st.markdown("---")
 
-    st.markdown("**Demo Controls**")
-    st.caption("Trigger a scenario to watch the agent investigate in real time.")
+    # ── 1. Monitoring Controls ───────────────────────────────────────
+    st.markdown("**Live Monitoring**")
+    proc_status = get_status()
+    monitoring_active = proc_status["overall"] == "running"
+
+    if monitoring_active:
+        inf_dot = "🟢" if proc_status["inference"] == "running" else "🔴"
+        agt_dot = "🟢" if proc_status["agent"] == "running" else "🔴"
+        st.caption(f"{inf_dot} Inference &nbsp; {agt_dot} Agent Watcher")
+        if st.button("⏹  Stop Monitoring", key="stop_mon", use_container_width=True):
+            stop_monitoring()
+            st.rerun()
+    else:
+        st.caption("Start LSTM inference + agent watcher.")
+        if st.button("▶  Start Monitoring", key="start_mon", use_container_width=True):
+            start_monitoring()
+            _time.sleep(1)
+            st.rerun()
+
+    st.markdown("---")
+
+    # ── 2. Live Test — cause REAL anomalies for LSTM ─────────────────
+    st.markdown("**⚡ Live Test** *(real disruption)*")
+    if monitoring_active:
+        st.caption("Cause a real anomaly — LSTM detects it.")
+    else:
+        st.caption("⚠️ Start monitoring first.")
+
+    with st.expander("🌐 DNS Failure", expanded=False):
+        st.markdown("Breaks your DNS so LSTM detects timeout.")
+        st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255', language="powershell")
+        st.caption("☝️ Run in **Admin PowerShell** to break DNS")
+        st.code('netsh interface ip set dns "Wi-Fi" dhcp', language="powershell")
+        st.caption("☝️ Run in **Admin PowerShell** to fix DNS")
+
+    with st.expander("📉 Packet Loss", expanded=False):
+        st.markdown(
+            "1. Open **Clumsy** app\n"
+            "2. Check **Drop** → set to **30%**\n"
+            "3. Click **Start**\n"
+            "4. Watch LSTM detect it!\n"
+            "5. Click **Stop** in Clumsy when done"
+        )
+
+    with st.expander("🌊 Bandwidth Flood", expanded=False):
+        st.markdown("Saturate bandwidth so LSTM detects the spike.")
+        st.code("curl.exe -o NUL http://speedtest.tele2.net/100MB.zip", language="powershell")
+        st.caption("Or open [fast.com](https://fast.com) in browser")
+
+    with st.expander("📱 Unknown Device", expanded=False):
+        st.markdown(
+            "1. Take your **phone** or a friend's\n"
+            "2. **Connect** it to this Wi-Fi\n"
+            "3. Agent's `scan_devices` flags it as 🆕 NEW"
+        )
+
+    st.markdown("---")
+
+    # ── 3. Quick Demo — inject fake alerts instantly ─────────────────
+    st.markdown("**🎭 Quick Demo** *(simulated)*")
+    st.caption("Inject a fake alert for instant agent demo.")
 
     scenario_labels = {
         "bandwidth_flood": "🌊  Bandwidth Flood",
@@ -424,35 +483,31 @@ with st.sidebar:
 
     for key, label in scenario_labels.items():
         if st.button(label, key=f"demo_{key}", use_container_width=True):
-            with st.spinner(f"Agent investigating {key.replace('_', ' ')}…"):
-                thread = threading.Thread(target=trigger_demo, args=(key,), daemon=True)
-                thread.start()
-                thread.join(timeout=90)
+            if not monitoring_active:
+                start_monitoring()
+                _time.sleep(2)
+            inject_demo_alert(key)
+            st.toast(f"✅ {key.replace('_', ' ').title()} alert injected!")
+            _time.sleep(1)
             st.rerun()
 
     st.markdown("---")
 
-    # ── Monitoring Controls ──────────────────────────────────────────
-    st.markdown("**Live Monitoring**")
-    proc_status = get_status()
-    monitoring_active = proc_status["overall"] == "running"
-
-    if monitoring_active:
-        inf_dot = "🟢" if proc_status["inference"] == "running" else "🔴"
-        agt_dot = "🟢" if proc_status["agent"] == "running" else "🔴"
-        st.caption(f"{inf_dot} Inference &nbsp; {agt_dot} Agent")
-        if st.button("⏹  Stop Monitoring", key="stop_mon", use_container_width=True):
-            stop_monitoring()
-            st.rerun()
-    else:
-        st.caption("Start inference + agent with one click.")
-        if st.button("▶  Start Monitoring", key="start_mon", use_container_width=True):
-            start_monitoring()
-            _time.sleep(1)  # let processes start
-            st.rerun()
-
-    st.markdown("---")
-    if st.button("🔄  Refresh", use_container_width=True):
+    # ── Clear + Footer ───────────────────────────────────────────────
+    if st.button("🔄 Refresh & Clear Alerts", use_container_width=True):
+        import json as _json
+        for path, default in [
+            (ALERTS_PATH, "[]"),
+            (AGENT_STATE_PATH, "{}"),
+            (AGENT_LOG_PATH, "[]"),
+        ]:
+            try:
+                with open(path, "w") as _f:
+                    _f.write(default)
+            except Exception:
+                pass
+        st.toast("🧹 Dashboard cleared!")
+        _time.sleep(0.5)
         st.rerun()
 
     st.markdown("---")

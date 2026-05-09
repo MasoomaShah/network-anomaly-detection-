@@ -275,11 +275,39 @@ DEMO_SCENARIOS = {
 }
 
 
+def inject_demo_alert(scenario_name: str) -> dict:
+    """
+    Inject a demo anomaly alert into alerts.json WITHOUT running the agent.
+    The LSTM watcher will pick it up and run the agent automatically.
+    Use this from the dashboard so the watcher handles everything.
+
+    scenario_name: bandwidth_flood | unknown_device | dns_failure | packet_loss
+    Returns the alert dict written to alerts.json.
+    """
+    if scenario_name not in DEMO_SCENARIOS:
+        raise ValueError(f"Unknown scenario: {scenario_name}. "
+                         f"Options: {list(DEMO_SCENARIOS.keys())}")
+
+    scenario = DEMO_SCENARIOS[scenario_name]
+    alert = _build_alert(
+        scenario["metrics"],
+        scenario["anomaly_type"],
+        scenario["severity"],
+    )
+    alert["source"] = "demo"
+    log.info("Demo alert injected: %s (alert #%d) — watcher will handle it",
+             scenario_name, alert["id"])
+
+    # Save live metrics so dashboard shows the anomalous values
+    _save_live_metrics(scenario["metrics"])
+
+    return alert
+
+
 def trigger_demo(scenario_name: str) -> dict:
     """
-    Fire a fake anomaly for demo purposes.
-    scenario_name: bandwidth_flood | unknown_device | dns_failure | packet_loss
-    Returns the alert dict.
+    Fire a demo anomaly and run the agent directly (CLI use).
+    For dashboard use, prefer inject_demo_alert() + LSTM watcher.
     """
     if scenario_name not in DEMO_SCENARIOS:
         raise ValueError(f"Unknown scenario: {scenario_name}. "
@@ -293,11 +321,9 @@ def trigger_demo(scenario_name: str) -> dict:
     )
     alert["source"] = "demo"
     log.info("Demo trigger: %s (alert #%d)", scenario_name, alert["id"])
-
-    # Save live metrics so dashboard shows the anomalous values
     _save_live_metrics(scenario["metrics"])
 
-    # Run agent
+    # Run agent directly (blocking — for CLI only)
     result = run_agent(alert)
     return result
 
@@ -305,14 +331,11 @@ def trigger_demo(scenario_name: str) -> dict:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Network Anomaly Trigger")
-    parser.add_argument("--mode", choices=["rules", "lstm", "demo"], default="rules")
+    parser.add_argument("--mode", choices=["lstm", "demo"], default="lstm")
     parser.add_argument("--scenario", choices=list(DEMO_SCENARIOS.keys()), default="dns_failure")
-    parser.add_argument("--interval", type=int, default=10)
     args = parser.parse_args()
 
-    if args.mode == "rules":
-        run_rule_based(interval=args.interval)
-    elif args.mode == "lstm":
+    if args.mode == "lstm":
         run_lstm_watcher()
     elif args.mode == "demo":
         trigger_demo(args.scenario)

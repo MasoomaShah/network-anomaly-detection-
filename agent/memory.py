@@ -38,13 +38,17 @@ def write_state(status: str, alert_id=None, steps=None, final_answer=None):
 
 def read_state() -> dict:
     """Read current agent state."""
+    default_state = {"status": "idle", "steps": [], "final_answer": None}
     if not os.path.exists(AGENT_STATE_PATH):
-        return {"status": "idle", "steps": [], "final_answer": None}
+        return default_state
     try:
         with open(AGENT_STATE_PATH, "r") as f:
-            return json.load(f)
+            state = json.load(f)
+            if "steps" not in state:
+                state["steps"] = []
+            return state
     except (json.JSONDecodeError, IOError):
-        return {"status": "idle", "steps": [], "final_answer": None}
+        return default_state
 
 
 def add_step(step_type: str, content: str, tool=None, tool_input=None):

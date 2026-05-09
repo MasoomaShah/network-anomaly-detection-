@@ -20,7 +20,7 @@ _COLLECTOR = os.path.join(_BASE, "collector")
 if _COLLECTOR not in sys.path:
     sys.path.insert(0, _COLLECTOR)
 
-from agent.config import IS_WINDOWS, IS_LINUX, GATEWAY, NETWORK, KNOWN_DEVICES_PATH
+from agent.config import IS_WINDOWS, IS_LINUX, GATEWAY, NETWORK
 
 # ─────────────────────────────────────────────────────────────────────────
 # 1. PING TEST
@@ -36,7 +36,7 @@ def run_ping_test(input_str: str) -> str:
         flag = "-n" if IS_WINDOWS else "-c"
         result = subprocess.run(
             ["ping", flag, str(count), host],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, timeout=10
         )
         output = result.stdout
 
@@ -89,7 +89,7 @@ def run_traceroute(host: str) -> str:
         else:
             cmd = ["traceroute", "-n", "-m", "15", host]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
         lines = result.stdout.strip().split("\n")
         # Limit output to keep it concise for the LLM
         if len(lines) > 20:
@@ -130,10 +130,32 @@ def run_speedtest(_: str = "") -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# 4. SCAN DEVICES
+# 4. SCAN DEVICES  (auto-learn baseline — works on ANY network)
 # ─────────────────────────────────────────────────────────────────────────
+_BASELINE_PATH = os.path.join(_BASE, "data", "device_baseline.json")
+
+
+def _load_baseline() -> dict:
+    """Load the auto-learned baseline of devices seen on this network."""
+    if not os.path.exists(_BASELINE_PATH):
+        return {}
+    try:
+        with open(_BASELINE_PATH, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+
+def _save_baseline(baseline: dict):
+    """Save baseline to disk."""
+    os.makedirs(os.path.dirname(_BASELINE_PATH), exist_ok=True)
+    with open(_BASELINE_PATH, "w") as f:
+        json.dump(baseline, f, indent=2)
+
+
 def scan_devices(_: str = "") -> str:
     """Scan the local network and list all connected devices with MAC addresses.
+    Auto-learns a baseline on first run — flags NEW devices on subsequent scans.
     Input: ignored — just pass empty string."""
     devices = []
 
@@ -147,35 +169,63 @@ def scan_devices(_: str = "") -> str:
             parts = line.split()
             if len(parts) >= 3:
                 ip = parts[0]
-                mac = parts[1] if not IS_WINDOWS else parts[1]
+                mac = parts[1]
                 # On Windows: IP is col 0, MAC is col 1, type is col 2
                 if any(c in mac for c in [":", "-"]) and mac.lower() != "ff-ff-ff-ff-ff-ff":
                     devices.append({"ip": ip, "mac": mac.lower()})
     except Exception:
         pass
 
-    # Load known devices for comparison
-    known_macs = set()
-    try:
-        with open(KNOWN_DEVICES_PATH, "r") as f:
-            known = json.load(f)
-            known_macs = {d["mac"].lower().replace(":", "-") for d in known.get("trusted", [])}
-    except Exception:
-        pass
-
     if not devices:
         return "Device scan: No devices found via ARP table."
 
+    # Load or create baseline (auto-learn approach)
+    baseline = _load_baseline()
+    baseline_macs = set(baseline.keys())
+    is_first_scan = len(baseline_macs) == 0
+
+    # Normalize current device MACs
+    current_macs = {}
+    for d in devices:
+        mac_norm = d["mac"].replace(":", "-").lower()
+        current_macs[mac_norm] = d["ip"]
+
+    # Auto-learn: add all new MACs to the baseline
+    new_devices = []
+    for mac_norm, ip in current_macs.items():
+        if mac_norm not in baseline_macs:
+            baseline[mac_norm] = {
+                "ip": ip,
+                "first_seen": time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            if not is_first_scan:
+                new_devices.append({"ip": ip, "mac": mac_norm})
+
+    # Save updated baseline
+    _save_baseline(baseline)
+
+    # Build output
     lines = [f"Network scan — {len(devices)} devices found:\n"]
     for d in devices:
-        mac_normalized = d["mac"].replace(":", "-").lower()
-        status = "✓ KNOWN" if mac_normalized in known_macs else "⚠ UNKNOWN"
-        lines.append(f"  {d['ip']:<16}  {d['mac']:<20}  {status}")
+        mac_norm = d["mac"].replace(":", "-").lower()
+        if is_first_scan:
+            status = "✓ BASELINE"
+        elif mac_norm in {nd["mac"] for nd in new_devices}:
+            status = "🆕 NEW"
+        else:
+            status = "✓ KNOWN"
+        first_seen = baseline.get(mac_norm, {}).get("first_seen", "now")
+        lines.append(f"  {d['ip']:<16}  {d['mac']:<20}  {status}  (since {first_seen})")
 
-    unknown_count = sum(1 for d in devices
-                        if d["mac"].replace(":", "-").lower() not in known_macs)
-    if unknown_count:
-        lines.append(f"\n  ⚠ {unknown_count} unknown device(s) detected!")
+    if is_first_scan:
+        lines.append(f"\n  ℹ First scan — saved {len(devices)} device(s) as baseline.")
+        lines.append(f"  Future scans will flag NEW devices automatically.")
+    elif new_devices:
+        lines.append(f"\n  🆕 {len(new_devices)} NEW device(s) detected since baseline!")
+        for nd in new_devices:
+            lines.append(f"     → {nd['ip']}  {nd['mac']}")
+    else:
+        lines.append(f"\n  ✓ No new devices — all {len(devices)} match baseline.")
 
     return "\n".join(lines)
 
@@ -399,31 +449,7 @@ TOOL_DEFINITIONS = [
             "Input: domain name. Example: 'google.com'"
         ),
     },
-    {
-        "name": "restart_interface",
-        "func": restart_interface,
-        "description": (
-            "Restart the network interface to fix connectivity issues. "
-            "Use as last resort when gateway is unreachable. "
-            "Input: not needed, pass empty string."
-        ),
-    },
-    {
-        "name": "block_device",
-        "func": block_mac,
-        "description": (
-            "Block a suspicious device by its MAC address. "
-            "Input: MAC address. Example: 'aa:bb:cc:dd:ee:ff'"
-        ),
-    },
-    {
-        "name": "switch_dns",
-        "func": switch_dns,
-        "description": (
-            "Switch DNS server when DNS resolution is failing. "
-            "Input: DNS server IP. Example: '8.8.8.8'"
-        ),
-    },
+
     {
         "name": "read_logs",
         "func": read_network_logs,

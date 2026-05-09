@@ -2,8 +2,7 @@
 main.py — Agentic AI Network Troubleshooter Entry Point
 ========================================================
 Usage:
-    python main.py                  # rule-based monitoring
-    python main.py --mode lstm      # watch for LSTM alerts
+    python main.py                  # LSTM watcher (default)
     python main.py --mode demo --scenario dns_failure   # fire a demo
 
 Dashboard (separate terminal):
@@ -19,7 +18,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-from agent.trigger import run_rule_based, run_lstm_watcher, trigger_demo, DEMO_SCENARIOS
+from agent.trigger import run_lstm_watcher, trigger_demo, DEMO_SCENARIOS
 
 
 def main():
@@ -29,11 +28,10 @@ def main():
     )
     parser.add_argument(
         "--mode",
-        choices=["rules", "lstm", "demo"],
-        default="rules",
+        choices=["lstm", "demo"],
+        default="lstm",
         help=(
-            "rules  — collect metrics + rule-based anomaly detection (default)\n"
-            "lstm   — watch alerts.json for LSTM-generated alerts\n"
+            "lstm   — watch alerts.json for LSTM-generated alerts (default)\n"
             "demo   — fire a single demo scenario and exit"
         ),
     )
@@ -43,12 +41,6 @@ def main():
         default="dns_failure",
         help="Demo scenario to trigger (only used with --mode demo)",
     )
-    parser.add_argument(
-        "--interval",
-        type=int,
-        default=10,
-        help="Seconds between metric collections in rules mode (default: 10)",
-    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -56,9 +48,7 @@ def main():
     print(f"   Mode: {args.mode}")
     print("=" * 60)
 
-    if args.mode == "rules":
-        run_rule_based(interval=args.interval)
-    elif args.mode == "lstm":
+    if args.mode == "lstm":
         run_lstm_watcher()
     elif args.mode == "demo":
         print(f"\n   Triggering demo: {args.scenario}\n")
@@ -73,3 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

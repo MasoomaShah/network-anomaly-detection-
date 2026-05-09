@@ -14,12 +14,12 @@ NMAP_DIR = r"C:\Program Files (x86)\Nmap"
 if os.path.isdir(NMAP_DIR) and NMAP_DIR not in os.environ.get("PATH", ""):
     os.environ["PATH"] = NMAP_DIR + os.pathsep + os.environ.get("PATH", "")
 
-def get_latency_loss_jitter(host=PING_HOST, count=20):
+def get_latency_loss_jitter(host=PING_HOST, count=4):
     """Single ping batch — returns latency, packet loss, jitter"""
     try:
         result = subprocess.run(
-            ["ping", "-n", str(count), host],   # -n for Windows
-            capture_output=True, text=True, timeout=30
+            ["ping", "-n", str(count), "-w", "1000", host],   # fast timeout per ping
+            capture_output=True, text=True, timeout=10
         )
         output = result.stdout
         loss = 0.0

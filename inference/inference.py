@@ -53,8 +53,8 @@ LIVE_METRICS_PATH = os.path.join(BASE_DIR, "data",   "live_metrics.json")
 # ── config ───────────────────────────────────────────────────────────────────
 TIMESTEPS  = 60
 N_FEATURES = 8
-INTERVAL_S = 5
-COOLDOWN_S = 60
+INTERVAL_S = 3
+COOLDOWN_S = 30
 
 # ── LSTM threshold tuning ────────────────────────────────────────────────────
 # The model's baseline reconstruction error depends on the specific network
@@ -210,7 +210,7 @@ def classify_anomaly_type(raw_metrics):
         severity     = "high" if gw > 500 else "medium"
     elif dns >= 1000:
         anomaly_type = "dns_failure"
-        severity     = "high" if dns >= 3000 else "medium"
+        severity     = "high"
     elif dl > 80 or ul > 40:
         anomaly_type = "bandwidth_saturation"
         severity     = "medium"
@@ -397,6 +397,16 @@ def main():
                     "severity": "high" if error > active_threshold * 2 else "medium",
                     "source": "lstm",
                 }
+
+        # 6b. CRITICAL RULE OVERRIDE — safety net for single-feature spikes
+        #     The LSTM averages across all 8 features, so a single metric
+        #     spiking (e.g. DNS=2000ms) may not cause enough total error.
+        #     If rules detect a CRITICAL condition, fire alert regardless.
+        if not trigger_classification and rule_label:
+            rule_label["source"] = "rule_override"
+            trigger_classification = rule_label
+            log.info("RULE OVERRIDE: %s (LSTM err=%.3f < thr=%.3f, but rules detected anomaly)",
+                     rule_label["anomaly_type"], error, active_threshold)
 
         # 5. Print status
         trigger_label = trigger_classification["anomaly_type"] if trigger_classification else None
