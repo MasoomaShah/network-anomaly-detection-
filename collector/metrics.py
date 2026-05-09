@@ -5,7 +5,7 @@ import os
 import psutil
 import numpy as np
 import requests
-from agent.config import GATEWAY, NETWORK, PING_HOST, PI_HOST, PI_PORT
+from agent.config import GATEWAY, NETWORK, PING_HOST, PI_HOST, PI_PORT, IS_WINDOWS
 
 
 DNS_TEST_DOMAIN = "google.com"
@@ -19,10 +19,13 @@ if os.path.isdir(NMAP_DIR) and NMAP_DIR not in os.environ.get("PATH", ""):
 def get_latency_loss_jitter(host=PING_HOST, count=4):
     """Single ping batch — returns latency, packet loss, jitter"""
     try:
+        flag = "-n" if IS_WINDOWS else "-c"
+        wait = "1000" if IS_WINDOWS else "1"
         result = subprocess.run(
-            ["ping", "-n", str(count), "-w", "1000", host],   # fast timeout per ping
-            capture_output=True, text=True, timeout=10
+            ["ping", flag, str(count), "-w", wait, host],   # fast timeout per ping
+            capture_output=True, text=True, timeout=15
         )
+
         output = result.stdout
         loss = 0.0
         latency = 0.0
@@ -81,10 +84,12 @@ def get_dns_response(domain=DNS_TEST_DOMAIN):
 def get_gateway_ping(gateway=GATEWAY):
     """Pings the router/gateway directly"""
     try:
+        flag = "-n" if IS_WINDOWS else "-c"
         result = subprocess.run(
-            ["ping", "-n", "4", gateway],
+            ["ping", flag, "4", gateway],
             capture_output=True, text=True, timeout=15
         )
+
         times = []
         for line in result.stdout.split("\n"):
             if "time=" in line:

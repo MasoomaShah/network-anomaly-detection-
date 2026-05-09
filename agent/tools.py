@@ -13,6 +13,10 @@ import time
 import socket
 import subprocess
 import platform
+import logging
+
+log = logging.getLogger("tools")
+
 
 # Ensure we can import metrics.py from collector/
 _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
