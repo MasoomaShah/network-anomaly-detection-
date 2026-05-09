@@ -40,6 +40,9 @@ KNOWN_DEVICES_PATH = os.path.join(_THIS_DIR, "known_devices.json")
 GATEWAY   = os.getenv("GATEWAY",   "192.168.1.1")
 NETWORK   = os.getenv("NETWORK",   "192.168.1.0/24")
 PING_HOST = os.getenv("PING_HOST", "8.8.8.8")
+PI_HOST   = os.getenv("PI_HOST",   "")
+PI_PORT   = int(os.getenv("PI_PORT", "5000"))
+
 
 # ── LLM (keys read lazily in get_llm to avoid import-time cache bugs) ──
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()

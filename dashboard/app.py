@@ -50,10 +50,14 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ── Reset & Base ────────────────────────────────────── */
-html, body, [data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] * {
+html, body, [data-testid="stAppViewContainer"] {
     font-family: 'Inter', sans-serif;
 }
+/* Ensure Streamlit's internal icons still work by not forcing the font on them */
+.st-emotion-cache-1vt4y65, .st-emotion-cache-1v0968z, [data-testid="stIcon"] {
+    font-family: inherit !important;
+}
+
 [data-testid="stAppViewContainer"] {
     background: #0d1117;
     color: #c9d1d9;
@@ -302,6 +306,11 @@ div.stButton > button:hover {
     font-weight: 600;
     color: #8b949e;
 }
+/* Hide the broken text overlays for icons */
+[data-testid="stExpander"] svg + div {
+    display: none !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 

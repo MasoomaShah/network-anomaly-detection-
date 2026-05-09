@@ -2,4 +2,7 @@
    Agentic AI Network Troubleshooter
    Mode: lstm
 ============================================================
-21:25:39  INFO      trigger       Starting LSTM WATCHER (polling alerts.json every 3s)
+23:30:46  INFO      trigger       Starting LSTM WATCHER (polling alerts.json every 3s)
+23:30:49  WARNING   trigger       New LSTM alert #1: bandwidth_saturation
+23:31:00  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:31:06  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"

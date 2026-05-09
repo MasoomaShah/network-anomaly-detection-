@@ -3,11 +3,13 @@ import socket
 import time
 import os
 import psutil
-import numpy as np 
-GATEWAY = "192.168.1.1"     
-NETWORK = "192.168.1.0/24"   
-PING_HOST = "8.8.8.8"
+import numpy as np
+import requests
+from agent.config import GATEWAY, NETWORK, PING_HOST, PI_HOST, PI_PORT
+
+
 DNS_TEST_DOMAIN = "google.com"
+
 
 # ── Ensure nmap is discoverable ──────────────────────────────────────────────
 NMAP_DIR = r"C:\Program Files (x86)\Nmap"
@@ -125,7 +127,16 @@ def get_connected_devices(network=NETWORK):
 
 
 def get_all_metrics():
-    """Returns all 8 features needed for LSTM Autoencoder"""
+    """Returns all 8 features. Fetches from Pi if PI_HOST is set."""
+    if PI_HOST:
+        url = f"http://{PI_HOST}:{PI_PORT}/metrics"
+        try:
+            resp = requests.get(url, timeout=5)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            print(f"[Pi metrics error] {e} — falling back to local collection")
+
     latency, loss, jitter = get_latency_loss_jitter()
     download, upload = get_bandwidth()
     dns = get_dns_response()
@@ -141,4 +152,4 @@ def get_all_metrics():
         "dns_response_ms":   dns,
         "gateway_ping_ms":   gateway,
         "jitter_ms":         jitter
-    }
+    }

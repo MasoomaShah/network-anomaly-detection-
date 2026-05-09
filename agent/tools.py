@@ -20,7 +20,19 @@ _COLLECTOR = os.path.join(_BASE, "collector")
 if _COLLECTOR not in sys.path:
     sys.path.insert(0, _COLLECTOR)
 
-from agent.config import IS_WINDOWS, IS_LINUX, GATEWAY, NETWORK
+import requests
+from agent.config import IS_WINDOWS, IS_LINUX, GATEWAY, NETWORK, PI_HOST, PI_PORT
+
+def _call_pi_tool(tool_name: str, input_str: str) -> str:
+    """Helper to forward tool calls to the Raspberry Pi API server."""
+    url = f"http://{PI_HOST}:{PI_PORT}/tool/{tool_name}"
+    try:
+        resp = requests.post(url, json={"input_str": input_str}, timeout=30)
+        resp.raise_for_status()
+        return resp.json().get("result", "No result from Pi.")
+    except Exception as e:
+        return f"[Pi remote error] Cannot reach {url}: {e}"
+
 
 # ─────────────────────────────────────────────────────────────────────────
 # 1. PING TEST
@@ -468,3 +480,16 @@ TOOL_DEFINITIONS = [
         ),
     },
 ]
+
+# ── Remote Dispatch Wrapper ──────────────────────────────────────────────
+if PI_HOST:
+    log.info(f"REMOTE MODE: Tool calls will be sent to Pi at {PI_HOST}:{PI_PORT}")
+    for tool in TOOL_DEFINITIONS:
+        # Capture original func and name in closure
+        def make_remote_func(tname=tool["name"], local_func=tool["func"]):
+            def remote_wrapper(input_str: str):
+                return _call_pi_tool(tname, input_str)
+            return remote_wrapper
+        
+        tool["func"] = make_remote_func()
+
