@@ -19,7 +19,8 @@ _BASE = os.path.dirname(os.path.abspath(__file__))
 if _BASE not in sys.path:
     sys.path.insert(0, _BASE)
 
-from collector.metrics import get_current_metrics
+from collector.metrics import get_all_metrics as get_current_metrics
+
 from agent.tools import TOOL_DEFINITIONS
 
 app = Flask(__name__)
