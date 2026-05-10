@@ -23,8 +23,25 @@ for _env_path in [
         load_dotenv(_env_path, override=True)
         break
 
-# ── Platform ────────────────────────────────────────────────────────────
-IS_WINDOWS = platform.system() == "Windows"
+# ── Platform Detection ──────────────────────────────────
+IS_WINDOWS = (platform.system() == "Windows")
+
+def get_active_interface():
+    """Detects the primary network interface name."""
+    if IS_WINDOWS:
+        return "Wi-Fi"
+    try:
+        # Use 'ip route' to find the interface used for the default gateway
+        result = subprocess.run(["ip", "route", "show", "default"], capture_output=True, text=True)
+        for line in result.stdout.split("\n"):
+            if "dev" in line:
+                return line.split("dev")[1].strip().split()[0]
+    except:
+        pass
+    return "wlan0" # fallback
+
+ACTIVE_INTERFACE = get_active_interface()
+
 IS_LINUX   = platform.system() == "Linux"
 
 # ── Paths ───────────────────────────────────────────────────────────────

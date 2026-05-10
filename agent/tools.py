@@ -483,7 +483,33 @@ TOOL_DEFINITIONS = [
             "Input: not needed, pass empty string."
         ),
     },
+    {
+        "name": "restart_interface",
+        "func": restart_interface,
+        "description": (
+            "Restarts the network interface on the Raspberry Pi. "
+            "Clears temporary network issues, traffic rules, and congestion. "
+            "Input: not needed, pass empty string."
+        ),
+    },
+    {
+        "name": "block_mac",
+        "func": block_mac,
+        "description": (
+            "Blocks a device from the network using its MAC address. "
+            "Input: MAC address. Example: 'aa:bb:cc:dd:ee:ff'"
+        ),
+    },
+    {
+        "name": "switch_dns",
+        "func": switch_dns,
+        "description": (
+            "Changes the system DNS server. "
+            "Input: DNS server IP. Example: '8.8.8.8'"
+        ),
+    },
 ]
+
 
 # ── Remote Dispatch Wrapper ──────────────────────────────────────────────
 if PI_HOST:
