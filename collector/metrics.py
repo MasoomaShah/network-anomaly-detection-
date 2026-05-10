@@ -110,8 +110,9 @@ def get_connected_devices(network=NETWORK):
     """Fast device count using ARP table (nmap is too slow for real-time)"""
     try:
         result = subprocess.run(
-            ["arp", "-a"], capture_output=True, text=True, timeout=10
+            ["arp", "-n"], capture_output=True, text=True, timeout=10
         )
+
 
         # Filter for actual dynamic entries
         lines = [l for l in result.stdout.split("\n")
