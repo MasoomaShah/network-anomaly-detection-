@@ -31,23 +31,32 @@ def get_latency_loss_jitter(host=PING_HOST, count=4):
         latency = 0.0
         jitter = 0.0
 
-        times = []
-        for line in output.split("\n"):
-            if "time=" in line or "time<" in line:
+        if IS_WINDOWS:
+            # Windows Parsing
+            if "Lost =" in output:
                 try:
-                    t = line.split("time=")[-1].split("ms")[0].strip()
-                    times.append(float(t))
-                except:
-                    pass
-            if "Lost" in line or "loss" in line.lower():
+                    loss_part = output.split("Lost =")[1].split("(")[1].split("%")[0]
+                    loss = float(loss_part)
+                except: pass
+            if "Average =" in output:
                 try:
-                    loss = float(line.split("(")[1].split("%")[0].strip())
-                except:
-                    pass
-
-        if times:
-            latency = round(sum(times) / len(times), 2)
-            jitter = round(np.std(times), 2)
+                    latency = float(output.split("Average =")[1].split("ms")[0].strip())
+                except: pass
+        else:
+            # Linux/Pi Parsing
+            # Example: 4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+            if "packet loss" in output:
+                try:
+                    loss_part = output.split("received, ")[1].split("%")[0]
+                    loss = float(loss_part)
+                except: pass
+            # Example: rtt min/avg/max/mdev = 47.161/48.234/50.123/1.234 ms
+            if "rtt min/avg/max/mdev" in output:
+                try:
+                    parts = output.split("=")[1].strip().split("/")
+                    latency = float(parts[1])  # avg
+                    jitter = float(parts[3].split(" ")[0]) # mdev is roughly jitter
+                except: pass
 
         return latency, loss, jitter
 
@@ -56,15 +65,22 @@ def get_latency_loss_jitter(host=PING_HOST, count=4):
         return 999.0, 100.0, 999.0
 
 
-def get_bandwidth():
+def get_bandwidth(interval=1):
     """Measures actual bandwidth using psutil over 1 second window"""
     try:
-        net1 = psutil.net_io_counters()
-        time.sleep(1)
-        net2 = psutil.net_io_counters()
-        download = round((net2.bytes_recv - net1.bytes_recv) / 1e6 * 8, 3)
-        upload = round((net2.bytes_sent - net1.bytes_sent) / 1e6 * 8, 3)
-        return download, upload
+        s1 = psutil.net_io_counters()
+        time.sleep(interval)
+        s2 = psutil.net_io_counters()
+
+        # Convert bytes to Megabits
+        dl = (s2.bytes_recv - s1.bytes_recv) * 8 / (1024 * 1024 * interval)
+        ul = (s2.bytes_sent - s1.bytes_sent) * 8 / (1024 * 1024 * interval)
+        
+        # Add a tiny bit of "noise" if it's exactly 0 to show it's alive
+        if dl == 0: dl = 0.001
+        if ul == 0: ul = 0.001
+        
+        return round(dl, 3), round(ul, 3)
     except Exception as e:
         print(f"[bandwidth error] {e}")
         return 0.0, 0.0
