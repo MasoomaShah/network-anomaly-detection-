@@ -272,31 +272,37 @@ def check_dns(domain: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────
 # 6. RESTART NETWORK INTERFACE
 # ─────────────────────────────────────────────────────────────────────────
-def restart_interface(_: str = "") -> str:
-    """Restart the primary network interface to fix connectivity issues.
+def restart_interface(interface=None):
+    """Restart the primary network interface and clear all traffic rules.
     Input: ignored. Requires admin privileges on Linux. DRY-RUN on Windows."""
+    from agent.config import ACTIVE_INTERFACE
+    target = interface or ACTIVE_INTERFACE
+
     if IS_WINDOWS:
         return (
-            "[DRY RUN — Windows] Would restart network interface.\n"
-            "  On Raspberry Pi, this runs:\n"
-            "    sudo ip link set wlan0 down && sleep 2 && sudo ip link set wlan0 up\n"
-            "  Simulating: interface restart successful."
+            f"[DRY RUN — Windows] Would restart network interface: {target}\n"
+            f"  On Raspberry Pi, this runs:\n"
+            f"    sudo tc qdisc del dev {target} root; sudo ip link set {target} down; ...\n"
+            f"  Simulating: interface restart successful."
         )
 
     # Linux / RPi
     try:
-        iface = "wlan0"  # default RPi wireless interface
-        subprocess.run(["sudo", "ip", "link", "set", iface, "down"],
+        # 1. Force clear any TC rules first
+        subprocess.run(["sudo", "tc", "qdisc", "del", "dev", target, "root"],
+                       capture_output=True)
+        
+        # 2. Bounce the interface
+        subprocess.run(["sudo", "ip", "link", "set", target, "down"],
                        check=True, timeout=10)
         time.sleep(2)
-        subprocess.run(["sudo", "ip", "link", "set", iface, "up"],
+        subprocess.run(["sudo", "ip", "link", "set", target, "up"],
                        check=True, timeout=10)
         time.sleep(3)  # wait for reconnect
-        return f"Network interface '{iface}' restarted successfully. Waiting for reconnect..."
-    except subprocess.CalledProcessError as e:
-        return f"Failed to restart interface: {e} (need sudo privileges?)"
+        return f"Network interface '{target}' restarted and rules cleared successfully."
     except Exception as e:
         return f"Interface restart error: {e}"
+
 
 
 # ─────────────────────────────────────────────────────────────────────────
