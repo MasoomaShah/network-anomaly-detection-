@@ -52,11 +52,23 @@ def execute_tool(name):
         
         log.info(f"Executing tool: {name} with input: '{input_str}'")
         
+        # For 'restart_interface', we run it in the background so we don't 
+        # kill the HTTP connection before sending the response.
+        if name == "restart_interface":
+            import threading
+            import time
+            def do_restart():
+                time.sleep(1)
+                tool["func"](input_str)
+            threading.Thread(target=do_restart).start()
+            return jsonify({"result": "Interface restart initiated in background. Connection will drop momentarily."})
+
         # Execute the tool's function
         # Note: We call the underlying function directly to avoid recursive remote calls
         result = tool["func"](input_str)
         
         return jsonify({"result": result})
+
     except Exception as e:
         log.error(f"Tool error ({name}): {e}")
         return jsonify({"error": str(e)}), 500

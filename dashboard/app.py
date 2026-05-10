@@ -520,7 +520,16 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
+    if st.button("🚀 FORCE REMEDIATION", use_container_width=True):
+        from agent.tools import restart_interface
+        with st.spinner("Sending FORCE FIX to Pi..."):
+            res = restart_interface("")
+            st.success(res)
+            _time.sleep(2)
+            st.rerun()
+
     st.caption("Built for DNN Course — 6th Semester AI")
+
 
 
 # ── Main Layout ──────────────────────────────────────────────────────────
