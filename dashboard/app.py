@@ -440,14 +440,14 @@ with st.sidebar:
     else:
         st.caption("⚠️ Start monitoring first.")
 
-    with st.expander("🌐 DNS Failure", expanded=False):
+    with st.expander("DNS Failure", expanded=False):
         st.markdown("Breaks your DNS so LSTM detects timeout.")
         st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255', language="powershell")
         st.caption("☝️ Run in **Admin PowerShell** to break DNS")
         st.code('netsh interface ip set dns "Wi-Fi" dhcp', language="powershell")
         st.caption("☝️ Run in **Admin PowerShell** to fix DNS")
 
-    with st.expander("📉 Packet Loss", expanded=False):
+    with st.expander("Packet Loss", expanded=False):
         st.markdown(
             "1. Open **Clumsy** app\n"
             "2. Check **Drop** → set to **30%**\n"
@@ -456,12 +456,13 @@ with st.sidebar:
             "5. Click **Stop** in Clumsy when done"
         )
 
-    with st.expander("🌊 Bandwidth Flood", expanded=False):
+    with st.expander("Bandwidth Flood", expanded=False):
         st.markdown("Saturate bandwidth so LSTM detects the spike.")
         st.code("curl.exe -o NUL http://speedtest.tele2.net/100MB.zip", language="powershell")
         st.caption("Or open [fast.com](https://fast.com) in browser")
 
-    with st.expander("📱 Unknown Device", expanded=False):
+    with st.expander("Unknown Device", expanded=False):
+
         st.markdown(
             "1. Take your **phone** or a friend's\n"
             "2. **Connect** it to this Wi-Fi\n"
