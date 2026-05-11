@@ -150,16 +150,24 @@ header[data-testid="stHeader"] {
     margin-bottom: 0.2rem;
 }
 
-/* ── Fix for Broken Expander Icons ──────────────────── */
-span[data-testid="stWidgetLabel"] p {
-    display: inline-block !important;
-}
-/* This hides the "arrow_right" text bug */
-.st-emotion-cache-p5msec e1nzilvr4 {
+/* ── Fix for Broken Expander Icons (Master Shield) ── */
+[data-testid="stSidebar"] [data-testid="stExpander"] svg,
+[data-testid="stSidebar"] [data-testid="stExpander"] i,
+[data-testid="stSidebar"] [data-testid="stExpander"] .st-emotion-cache-p5msec,
+summary svg {
     display: none !important;
 }
+
+/* Force expander titles to be clean */
 summary div[data-testid="stMarkdownContainer"] p {
     display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+/* Hide the weird "keyboard_double" text at the top */
+[data-testid="stSidebar"] span:contains("keyboard"),
+[data-testid="stSidebar"] span:contains("arrow") {
+    display: none !important;
 }
 
 /* ── Alert Row ───────────────────────────────────────── */
