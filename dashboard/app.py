@@ -150,24 +150,25 @@ header[data-testid="stHeader"] {
     margin-bottom: 0.2rem;
 }
 
-/* ── Fix for Broken Expander Icons (Master Shield) ── */
-[data-testid="stSidebar"] [data-testid="stExpander"] svg,
-[data-testid="stSidebar"] [data-testid="stExpander"] i,
-[data-testid="stSidebar"] [data-testid="stExpander"] .st-emotion-cache-p5msec,
-summary svg {
+/* ── Aggressive Fix for Broken Icons (Deep Clean) ── */
+/* This hides the actual text labels that Streamlit is incorrectly showing */
+:is(p, span, div):contains("arrow_"),
+:is(p, span, div):contains("keyboard_"),
+:is(p, span, div):contains("double_") {
+    display: none !important;
+    visibility: hidden !important;
+    font-size: 0px !important;
+}
+
+/* Hide all SVG icons in the sidebar/expanders just to be safe */
+[data-testid="stSidebar"] svg, 
+[data-testid="stExpander"] svg {
     display: none !important;
 }
 
 /* Force expander titles to be clean */
 summary div[data-testid="stMarkdownContainer"] p {
     display: inline-block !important;
-    vertical-align: middle !important;
-}
-
-/* Hide the weird "keyboard_double" text at the top */
-[data-testid="stSidebar"] span:contains("keyboard"),
-[data-testid="stSidebar"] span:contains("arrow") {
-    display: none !important;
 }
 
 /* ── Alert Row ───────────────────────────────────────── */
@@ -740,9 +741,12 @@ _dot = "🟢" if _drawer_running else "⚫"
 _inf_logs = read_log_tail("inference", 80) or "No inference logs yet. Click ▶ Start Monitoring in the sidebar."
 _agt_logs = read_log_tail("agent", 80) or "No agent logs yet. Click ▶ Start Monitoring in the sidebar."
 
-with st.expander(f"{_dot} Logs — click to expand", expanded=False):
-    log_tab1, log_tab2 = st.tabs(["📊 Inference", "🤖 Agent"])
-    with log_tab1:
-        st.code(_inf_logs, language="log")
-    with log_tab2:
-        st.code(_agt_logs, language="log")
+# ── Log Section (No expander to avoid bugs) ──────────────────────
+st.markdown("---")
+st.markdown(f"### {_dot} Logs")
+log_tab1, log_tab2 = st.tabs(["📊 Inference", "🤖 Agent"])
+with log_tab1:
+    st.code(_inf_logs, language="log")
+with log_tab2:
+    st.code(_agt_logs, language="log")
+
