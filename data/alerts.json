@@ -187,5 +187,26 @@
       "jitter_ms": 0.0
     },
     "status": "resolved"
+  },
+  {
+    "id": 10,
+    "timestamp": "2026-05-11T20:02:11.598794",
+    "reconstruction_error": 103.448296,
+    "threshold": 269.767666,
+    "error_ratio": 0.383,
+    "anomaly_type": "high_latency",
+    "severity": "medium",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 159.0,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.036,
+      "upload_mbps": 0.029,
+      "connected_devices": 1.0,
+      "dns_response_ms": 1.0,
+      "gateway_ping_ms": 56.5,
+      "jitter_ms": 0.0
+    },
+    "status": "pending"
   }
 ]
