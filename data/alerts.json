@@ -1,1 +1,233 @@
-[]
+[
+  {
+    "id": 1,
+    "timestamp": "2026-05-11T21:13:21.324578",
+    "reconstruction_error": 0,
+    "threshold": 0,
+    "error_ratio": 0,
+    "anomaly_type": "unexpected_devices",
+    "severity": "medium",
+    "metrics": {
+      "latency_ms": 55.0,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 12.0,
+      "upload_mbps": 5.0,
+      "connected_devices": 12,
+      "dns_response_ms": 15.0,
+      "gateway_ping_ms": 8.0,
+      "jitter_ms": 10.0
+    },
+    "status": "resolved",
+    "source": "rule_based"
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-05-11T21:19:14.157033",
+    "reconstruction_error": 0.138132,
+    "threshold": 2.075509,
+    "error_ratio": 0.067,
+    "anomaly_type": "high_packet_loss",
+    "severity": "high",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 50.33,
+      "packet_loss_pct": 25.0,
+      "download_mbps": 0.031,
+      "upload_mbps": 0.005,
+      "connected_devices": 2.0,
+      "dns_response_ms": 1.01,
+      "gateway_ping_ms": 29.75,
+      "jitter_ms": 6.18
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 3,
+    "timestamp": "2026-05-11T21:25:49.396943",
+    "reconstruction_error": 0.229673,
+    "threshold": 2.120122,
+    "error_ratio": 0.108,
+    "anomaly_type": "gateway_unreachable",
+    "severity": "medium",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 48.25,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.059,
+      "upload_mbps": 0.004,
+      "connected_devices": 2.0,
+      "dns_response_ms": 0.0,
+      "gateway_ping_ms": 178.0,
+      "jitter_ms": 3.77
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-05-11T21:32:02.247997",
+    "reconstruction_error": 0.319706,
+    "threshold": 2.157198,
+    "error_ratio": 0.148,
+    "anomaly_type": "high_packet_loss",
+    "severity": "high",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 47.0,
+      "packet_loss_pct": 25.0,
+      "download_mbps": 0.233,
+      "upload_mbps": 0.948,
+      "connected_devices": 2.0,
+      "dns_response_ms": 1.54,
+      "gateway_ping_ms": 31.5,
+      "jitter_ms": 2.45
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 5,
+    "timestamp": "2026-05-11T21:43:32.629589",
+    "reconstruction_error": 0,
+    "threshold": 0,
+    "error_ratio": 0,
+    "anomaly_type": "dns_failure",
+    "severity": "high",
+    "metrics": {
+      "latency_ms": 60.0,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 15.0,
+      "upload_mbps": 8.0,
+      "connected_devices": 4,
+      "dns_response_ms": 9999.0,
+      "gateway_ping_ms": 10.0,
+      "jitter_ms": 12.0
+    },
+    "status": "resolved",
+    "source": "rule_based"
+  },
+  {
+    "id": 6,
+    "timestamp": "2026-05-11T21:46:28.360584",
+    "reconstruction_error": 0.282993,
+    "threshold": 2.221806,
+    "error_ratio": 0.127,
+    "anomaly_type": "high_packet_loss",
+    "severity": "high",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 50.33,
+      "packet_loss_pct": 25.0,
+      "download_mbps": 0.117,
+      "upload_mbps": 0.148,
+      "connected_devices": 2.0,
+      "dns_response_ms": 6.94,
+      "gateway_ping_ms": 35.5,
+      "jitter_ms": 2.62
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 7,
+    "timestamp": "2026-05-11T21:48:19.407702",
+    "reconstruction_error": 0.323946,
+    "threshold": 2.224951,
+    "error_ratio": 0.146,
+    "anomaly_type": "gateway_unreachable",
+    "severity": "medium",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 85.5,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 1.205,
+      "upload_mbps": 0.697,
+      "connected_devices": 2.0,
+      "dns_response_ms": 0.0,
+      "gateway_ping_ms": 164.0,
+      "jitter_ms": 41.79
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 8,
+    "timestamp": "2026-05-11T21:51:25.416314",
+    "reconstruction_error": 0.291074,
+    "threshold": 2.230254,
+    "error_ratio": 0.131,
+    "anomaly_type": "gateway_unreachable",
+    "severity": "medium",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 50.5,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.049,
+      "upload_mbps": 0.007,
+      "connected_devices": 2.0,
+      "dns_response_ms": 1.01,
+      "gateway_ping_ms": 138.25,
+      "jitter_ms": 3.77
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 9,
+    "timestamp": "2026-05-11T21:53:55.771749",
+    "reconstruction_error": 0.231007,
+    "threshold": 2.12667,
+    "error_ratio": 0.109,
+    "anomaly_type": "high_latency",
+    "severity": "medium",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 204.75,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.094,
+      "upload_mbps": 0.078,
+      "connected_devices": 2.0,
+      "dns_response_ms": 0.0,
+      "gateway_ping_ms": 94.75,
+      "jitter_ms": 202.25
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 10,
+    "timestamp": "2026-05-11T21:54:39.764709",
+    "reconstruction_error": 0.305097,
+    "threshold": 2.232762,
+    "error_ratio": 0.137,
+    "anomaly_type": "high_latency",
+    "severity": "medium",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 196.5,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.094,
+      "upload_mbps": 0.078,
+      "connected_devices": 2.0,
+      "dns_response_ms": 0.0,
+      "gateway_ping_ms": 93.5,
+      "jitter_ms": 122.57
+    },
+    "status": "resolved"
+  },
+  {
+    "id": 11,
+    "timestamp": "2026-05-11T21:55:45.338515",
+    "reconstruction_error": 0.238348,
+    "threshold": 2.130521,
+    "error_ratio": 0.112,
+    "anomaly_type": "high_jitter",
+    "severity": "low",
+    "trigger_source": "rule_override",
+    "metrics": {
+      "latency_ms": 131.25,
+      "packet_loss_pct": 0.0,
+      "download_mbps": 0.039,
+      "upload_mbps": 0.006,
+      "connected_devices": 2.0,
+      "dns_response_ms": 5.72,
+      "gateway_ping_ms": 29.25,
+      "jitter_ms": 80.25
+    },
+    "status": "resolved"
+  }
+]
