@@ -192,7 +192,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install tensorflow numpy joblib scikit-learn pytest
+          pip install tensorflow numpy joblib scikit-learn pytest pytest-timeout
 
       - name: Run model validation
         run: |
