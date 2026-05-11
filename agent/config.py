@@ -42,14 +42,14 @@ NETWORK   = os.getenv("NETWORK",   "192.168.1.0/24")
 PING_HOST = os.getenv("PING_HOST", "8.8.8.8")
 
 # ── LLM (keys read lazily in get_llm to avoid import-time cache bugs) ──
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
 
 
 def get_llm():
     """Factory — returns the configured LangChain ChatModel.
     Reads API keys fresh from env each call (avoids Streamlit cache issues).
     """
-    provider = os.getenv("LLM_PROVIDER", "groq").lower()
+    provider = os.getenv("LLM_PROVIDER", "openai").lower()
 
     if provider == "groq":
         from langchain_groq import ChatGroq
@@ -72,7 +72,7 @@ def get_llm():
     elif provider == "openai":
         from langchain_openai import ChatOpenAI
         key   = os.getenv("OPENAI_API_KEY", "")
-        model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         return ChatOpenAI(model=model, api_key=key, temperature=0)
 
     else:
@@ -84,7 +84,7 @@ def get_llm():
 
 def get_llm_display_name() -> str:
     """Human-readable name for the active LLM (shown on dashboard)."""
-    provider = os.getenv("LLM_PROVIDER", "groq").lower()
+    provider = os.getenv("LLM_PROVIDER", "openai").lower()
     names = {
         "groq":   f"Groq / {os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')}",
         "ollama": f"Ollama / {os.getenv('OLLAMA_MODEL', 'llama3')}",
