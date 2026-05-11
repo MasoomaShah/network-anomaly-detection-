@@ -466,6 +466,9 @@ with st.sidebar:
     st.caption("Breaks your DNS so LSTM detects timeout.")
     st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255', language="powershell")
     st.caption("☝️ Run in **Admin PowerShell** to break DNS")
+    st.code('netsh interface ip set dns "Wi-Fi" dhcp', language="powershell")
+    st.caption("☝️ Run in **Admin PowerShell** to fix DNS")
+
 
     # Packet Loss Section
     st.markdown("---")
