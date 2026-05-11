@@ -150,6 +150,18 @@ header[data-testid="stHeader"] {
     margin-bottom: 0.2rem;
 }
 
+/* ── Fix for Broken Expander Icons ──────────────────── */
+span[data-testid="stWidgetLabel"] p {
+    display: inline-block !important;
+}
+/* This hides the "arrow_right" text bug */
+.st-emotion-cache-p5msec e1nzilvr4 {
+    display: none !important;
+}
+summary div[data-testid="stMarkdownContainer"] p {
+    display: inline-block !important;
+}
+
 /* ── Alert Row ───────────────────────────────────────── */
 .arow {
     background: #161b22;
