@@ -5,7 +5,7 @@ psutil
 scikit-learn
 
 # ── Deep Learning ────────────────────────────────────────
-tensorflow
+# tensorflow (Removed for Streamlit Cloud compatibility - only needed on RPi)
 
 # ── Agent / LLM ──────────────────────────────────────────
 langchain>=0.2.0
