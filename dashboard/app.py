@@ -460,36 +460,31 @@ with st.sidebar:
     else:
         st.caption("⚠️ Start monitoring first.")
 
-    with st.expander("DNS Failure", expanded=False):
-        st.markdown("Breaks your DNS so LSTM detects timeout.")
-        st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255', language="powershell")
-        st.caption("☝️ Run in **Admin PowerShell** to break DNS")
-        st.code('netsh interface ip set dns "Wi-Fi" dhcp', language="powershell")
-        st.caption("☝️ Run in **Admin PowerShell** to fix DNS")
+    # DNS Section
+    st.markdown("---")
+    st.markdown("**🌐 DNS Failure**")
+    st.caption("Breaks your DNS so LSTM detects timeout.")
+    st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255', language="powershell")
+    st.caption("☝️ Run in **Admin PowerShell** to break DNS")
 
-    with st.expander("Packet Loss", expanded=False):
-        st.markdown(
-            "1. Open **Clumsy** app\n"
-            "2. Check **Drop** → set to **30%**\n"
-            "3. Click **Start**\n"
-            "4. Watch LSTM detect it!\n"
-            "5. Click **Stop** in Clumsy when done"
-        )
+    # Packet Loss Section
+    st.markdown("---")
+    st.markdown("**📉 Packet Loss**")
+    st.caption("Open **Clumsy**, set **Drop** to **70%**, and click **Start**.")
 
-    with st.expander("Bandwidth Flood", expanded=False):
-        st.markdown("Saturate bandwidth so LSTM detects the spike.")
-        st.code("curl.exe -o NUL http://speedtest.tele2.net/100MB.zip", language="powershell")
-        st.caption("Or open [fast.com](https://fast.com) in browser")
+    # Bandwidth Section
+    st.markdown("---")
+    st.markdown("**🌊 Bandwidth Flood**")
+    st.caption("Saturate bandwidth to detect a spike.")
+    st.code("curl.exe -o NUL http://speedtest.tele2.net/100MB.zip", language="powershell")
 
-    with st.expander("Unknown Device", expanded=False):
-
-        st.markdown(
-            "1. Take your **phone** or a friend's\n"
-            "2. **Connect** it to this Wi-Fi\n"
-            "3. Agent's `scan_devices` flags it as 🆕 NEW"
-        )
+    # Unknown Device Section
+    st.markdown("---")
+    st.markdown("**📱 Unknown Device**")
+    st.caption("Connect a new phone to the Wi-Fi or run the 'Ghost' command.")
 
     st.markdown("---")
+
 
     # ── 3. Quick Demo — inject fake alerts instantly ─────────────────
     st.markdown("**🎭 Quick Demo** *(simulated)*")
