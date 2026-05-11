@@ -1,9 +1,3 @@
-# trained models
-models/*.keras
-models/*.pkl
-models/*.npy
-models/*.h5
-
 # data
 data/*.csv
 data/agent_log.json

@@ -185,10 +185,6 @@ _FALLBACK_DIAGNOSES = {
         "🌐 DNS FAILURE DETECTED\n\n"
         "Diagnosis: DNS resolution is failing — the configured DNS server is "
         "unreachable or unresponsive.\n\n"
-        "Recommended fix:\n"
-        "  1. Switch DNS to Google Public DNS: 8.8.8.8 / 8.8.4.4\n"
-        "  2. Or Cloudflare DNS: 1.1.1.1\n"
-        "  3. Run: netsh interface ip set dns \"Wi-Fi\" dhcp\n\n"
         "Note: LLM agent could not connect to OpenAI API because DNS is down. "
         "This diagnosis was generated locally."
     ),
@@ -198,12 +194,7 @@ _FALLBACK_DIAGNOSES = {
         "Possible causes:\n"
         "  - Network congestion or overloaded router\n"
         "  - Faulty network cable or Wi-Fi interference\n"
-        "  - ISP-side issue\n\n"
-        "Recommended fix:\n"
-        "  1. Restart your router/access point\n"
-        "  2. Move closer to the Wi-Fi access point\n"
-        "  3. Check for bandwidth-heavy applications\n"
-        "  4. Contact ISP if issue persists"
+        "  - ISP-side issue"
     ),
     "bandwidth_saturation": (
         "🌊 BANDWIDTH SATURATION DETECTED\n\n"
@@ -211,27 +202,15 @@ _FALLBACK_DIAGNOSES = {
         "Possible causes:\n"
         "  - Large file upload/download in progress\n"
         "  - Multiple devices streaming simultaneously\n"
-        "  - Background cloud sync or updates\n\n"
-        "Recommended fix:\n"
-        "  1. Identify and throttle heavy bandwidth users\n"
-        "  2. Pause cloud backups or large downloads\n"
-        "  3. Enable QoS on your router if available"
+        "  - Background cloud sync or updates"
     ),
     "unexpected_devices": (
         "📱 UNEXPECTED DEVICES DETECTED\n\n"
-        "Diagnosis: New or unknown devices have joined the network.\n\n"
-        "Recommended fix:\n"
-        "  1. Review connected devices on your router admin page\n"
-        "  2. Change Wi-Fi password if unauthorized devices found\n"
-        "  3. Enable MAC address filtering on your router"
+        "Diagnosis: New or unknown devices have joined the network."
     ),
     "gateway_unreachable": (
         "🔌 GATEWAY UNREACHABLE\n\n"
-        "Diagnosis: Cannot reach the default gateway (router).\n\n"
-        "Recommended fix:\n"
-        "  1. Check physical cable connections\n"
-        "  2. Restart router and network adapter\n"
-        "  3. Run: ipconfig /release && ipconfig /renew"
+        "Diagnosis: Cannot reach the default gateway (router)."
     ),
 }
 

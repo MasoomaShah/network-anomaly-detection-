@@ -58,6 +58,6 @@ def build_agent_input(alert: dict) -> str:
     return (
         f"An anomaly has been detected on the network.\n\n"
         f"Alert details:\n{context}\n\n"
-        f"Investigate this anomaly, diagnose the root cause, "
-        f"fix it if possible, verify the fix, and report your findings."
+        f"Please investigate this anomaly using your tools, identify the root cause, "
+        f"and provide a clear explanation and recommendation for the user."
     )

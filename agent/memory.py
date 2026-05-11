@@ -10,11 +10,10 @@ import os
 import json
 import datetime
 
-from agent.config import AGENT_STATE_PATH, AGENT_LOG_PATH, DATA_DIR
-
+from agent import config
 
 def _ensure_dir():
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(config.DATA_DIR, exist_ok=True)
 
 
 # ── Agent State (real-time, dashboard reads this) ────────────────────────
@@ -32,17 +31,17 @@ def write_state(status: str, alert_id=None, steps=None, final_answer=None):
         "steps": steps or [],
         "final_answer": final_answer,
     }
-    with open(AGENT_STATE_PATH, "w") as f:
+    with open(config.AGENT_STATE_PATH, "w") as f:
         json.dump(state, f, indent=2)
 
 
 def read_state() -> dict:
     """Read current agent state."""
     default_state = {"status": "idle", "steps": [], "final_answer": None}
-    if not os.path.exists(AGENT_STATE_PATH):
+    if not os.path.exists(config.AGENT_STATE_PATH):
         return default_state
     try:
-        with open(AGENT_STATE_PATH, "r") as f:
+        with open(config.AGENT_STATE_PATH, "r") as f:
             state = json.load(f)
             if "steps" not in state:
                 state["steps"] = []
@@ -62,7 +61,7 @@ def add_step(step_type: str, content: str, tool=None, tool_input=None):
         "timestamp": datetime.datetime.now().isoformat(),
     })
     state["updated_at"] = datetime.datetime.now().isoformat()
-    with open(AGENT_STATE_PATH, "w") as f:
+    with open(config.AGENT_STATE_PATH, "w") as f:
         json.dump(state, f, indent=2)
 
 
@@ -75,9 +74,9 @@ def append_log(alert: dict, steps: list, final_answer: str, outcome: str):
     """
     _ensure_dir()
 
-    if os.path.exists(AGENT_LOG_PATH):
+    if os.path.exists(config.AGENT_LOG_PATH):
         try:
-            with open(AGENT_LOG_PATH, "r") as f:
+            with open(config.AGENT_LOG_PATH, "r") as f:
                 log = json.load(f)
         except (json.JSONDecodeError, IOError):
             log = []
@@ -96,7 +95,7 @@ def append_log(alert: dict, steps: list, final_answer: str, outcome: str):
     }
     log.append(entry)
 
-    with open(AGENT_LOG_PATH, "w") as f:
+    with open(config.AGENT_LOG_PATH, "w") as f:
         json.dump(log, f, indent=2)
 
     return entry
@@ -104,10 +103,10 @@ def append_log(alert: dict, steps: list, final_answer: str, outcome: str):
 
 def read_log() -> list:
     """Read full agent action log."""
-    if not os.path.exists(AGENT_LOG_PATH):
+    if not os.path.exists(config.AGENT_LOG_PATH):
         return []
     try:
-        with open(AGENT_LOG_PATH, "r") as f:
+        with open(config.AGENT_LOG_PATH, "r") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
@@ -115,16 +114,15 @@ def read_log() -> list:
 
 def update_alert_status(alert_id: int, new_status: str):
     """Update an alert's status in alerts.json (pending → resolved)."""
-    from agent.config import ALERTS_PATH
-    if not os.path.exists(ALERTS_PATH):
+    if not os.path.exists(config.ALERTS_PATH):
         return
     try:
-        with open(ALERTS_PATH, "r") as f:
+        with open(config.ALERTS_PATH, "r") as f:
             alerts = json.load(f)
         for alert in alerts:
             if alert.get("id") == alert_id:
                 alert["status"] = new_status
-        with open(ALERTS_PATH, "w") as f:
+        with open(config.ALERTS_PATH, "w") as f:
             json.dump(alerts, f, indent=2)
     except Exception:
         pass
