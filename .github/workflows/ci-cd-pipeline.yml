@@ -146,6 +146,7 @@ jobs:
         env:
           GROQ_API_KEY: "test_key_for_ci"
           LLM_PROVIDER: "groq"
+        shell: bash
         run: |
           pytest tests/ -v \
             --timeout=60 \
