@@ -5,7 +5,7 @@ psutil
 scikit-learn
 
 # ── Deep Learning ────────────────────────────────────────
-tensorflow-cpu
+tensorflow
 
 # ── Agent / LLM ──────────────────────────────────────────
 langchain>=0.2.0

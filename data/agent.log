@@ -2,23 +2,19 @@
    Agentic AI Network Troubleshooter
    Mode: lstm
 ============================================================
-21:43:10  INFO      trigger       Starting LSTM WATCHER (polling alerts.json every 3s)
-21:46:29  WARNING   trigger       New LSTM alert #6: high_packet_loss
-21:46:34  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:46:47  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:48:20  WARNING   trigger       New LSTM alert #7: gateway_unreachable
-21:48:22  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:48:32  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:51:26  WARNING   trigger       New LSTM alert #8: gateway_unreachable
-21:51:27  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:51:37  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:53:56  WARNING   trigger       New LSTM alert #9: high_latency
-21:53:58  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:54:04  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:54:41  WARNING   trigger       New LSTM alert #10: high_latency
-21:54:42  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:54:48  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-
-21:55:45  WARNING   trigger       New LSTM alert #11: high_jitter
-21:55:47  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
-21:55:51  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:05:14  INFO      trigger       Starting LSTM WATCHER (polling alerts.json every 3s)
+23:05:56  WARNING   trigger       New LSTM alert #1: unexpected_devices
+23:06:10  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:06:16  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:06:30  WARNING   trigger       New LSTM alert #2: unexpected_devices
+23:06:55  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:06:59  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:07:03  WARNING   trigger       New LSTM alert #3: unexpected_devices
+23:07:04  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:07:10  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:07:33  WARNING   trigger       New LSTM alert #4: unexpected_devices
+23:07:34  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:07:37  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:08:06  WARNING   trigger       New LSTM alert #5: unexpected_devices
+23:08:07  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:08:12  INFO      httpx         HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
