@@ -1,0 +1,368 @@
+# ════════════════════════════════════════════════════════════════════════
+# CI/CD Pipeline — Agentic AI Network Troubleshooter
+# ════════════════════════════════════════════════════════════════════════
+# Stages:
+#   1. Code Quality  — lint, format, security scan
+#   2. Unit Tests    — test every module in isolation
+#   3. Model Check   — validate ML artifacts integrity
+#   4. Integration   — end-to-end pipeline smoke test
+#   5. Deploy        — auto-deploy on main branch push
+# ════════════════════════════════════════════════════════════════════════
+
+name: ML Pipeline CI/CD
+
+on:
+  push:
+    branches: [main, agenticfix]
+  pull_request:
+    branches: [main]
+  # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ─────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 1: CODE QUALITY
+  # ═══════════════════════════════════════════════════════════════════════
+  code-quality:
+    name: "🔍 Code Quality"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-lint-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-lint-
+
+      - name: Install linting tools
+        run: |
+          pip install --upgrade pip
+          pip install flake8 black isort bandit safety
+
+      - name: "Flake8 — Lint Check"
+        run: |
+          echo "::group::Flake8 Results"
+          flake8 . \
+            --count \
+            --select=E9,F63,F7,F82 \
+            --show-source \
+            --statistics \
+            --exclude=.git,__pycache__,models,data,.github,venv
+          echo "::endgroup::"
+          # Warnings (non-blocking)
+          flake8 . \
+            --count \
+            --exit-zero \
+            --max-complexity=15 \
+            --max-line-length=120 \
+            --statistics \
+            --exclude=.git,__pycache__,models,data,.github,venv
+
+      - name: "Black — Format Check"
+        run: |
+          black --check --diff --line-length 120 \
+            --exclude '/(\.git|__pycache__|models|data|venv|\.github)/' \
+            . || echo "::warning::Code formatting issues found. Run 'black .' to fix."
+
+      - name: "isort — Import Order Check"
+        run: |
+          isort --check-only --diff --profile black \
+            --skip-glob '*/models/*' --skip-glob '*/data/*' --skip-glob '*/venv/*' \
+            . || echo "::warning::Import ordering issues found. Run 'isort .' to fix."
+
+      - name: "Bandit — Security Scan"
+        run: |
+          bandit -r agent/ collector/ inference/ dashboard/ \
+            -ll --format json --output bandit-report.json || true
+          bandit -r agent/ collector/ inference/ dashboard/ \
+            -ll --format txt || echo "::warning::Security issues found — review bandit report."
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: bandit-report.json
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 2: UNIT TESTS
+  # ═══════════════════════════════════════════════════════════════════════
+  unit-tests:
+    name: "🧪 Unit Tests"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    needs: [code-quality]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-test-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-test-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-timeout
+
+      - name: Create test data directories
+        run: |
+          python -c "import os; os.makedirs('data', exist_ok=True); os.makedirs('models', exist_ok=True)"
+
+      - name: Run unit tests
+        env:
+          GROQ_API_KEY: "test_key_for_ci"
+          LLM_PROVIDER: "groq"
+        run: |
+          pytest tests/ -v \
+            --timeout=60 \
+            --tb=short \
+            --junitxml=test-results.xml \
+            --cov=agent --cov=collector --cov=inference \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            -x
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            test-results.xml
+            coverage.xml
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 3: MODEL VALIDATION
+  # ═══════════════════════════════════════════════════════════════════════
+  model-validation:
+    name: "🧠 Model Validation"
+    runs-on: ubuntu-latest
+    needs: [code-quality]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-model-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-model-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install tensorflow numpy joblib scikit-learn pytest
+
+      - name: Run model validation
+        run: |
+          pytest tests/test_model_validation.py -v \
+            --timeout=120 \
+            --tb=short \
+            -x
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 4: INTEGRATION TESTS
+  # ═══════════════════════════════════════════════════════════════════════
+  integration-tests:
+    name: "🔗 Integration Tests"
+    runs-on: ubuntu-latest
+    needs: [unit-tests, model-validation]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-integ-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-integ-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-timeout
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Run integration tests
+        env:
+          GROQ_API_KEY: "test_key_for_ci"
+          LLM_PROVIDER: "groq"
+        run: |
+          pytest tests/test_integration.py -v \
+            --timeout=120 \
+            --tb=short \
+            -x
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 5: DEPLOY (only on main branch push)
+  # ═══════════════════════════════════════════════════════════════════════
+  deploy:
+    name: "🚀 Deploy"
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate deployment readiness
+        run: |
+          python -c "
+          import sys, os
+          sys.path.insert(0, '.')
+
+          # Check all required modules import cleanly
+          errors = []
+
+          try:
+              from agent.config import get_llm_display_name, ALERTS_PATH
+              print('✅ agent.config OK')
+          except Exception as e:
+              errors.append(f'agent.config: {e}')
+
+          try:
+              from agent.prompts import SYSTEM_PROMPT
+              print('✅ agent.prompts OK')
+          except Exception as e:
+              errors.append(f'agent.prompts: {e}')
+
+          try:
+              from agent.trigger import DEMO_SCENARIOS
+              assert len(DEMO_SCENARIOS) >= 4, 'Expected at least 4 demo scenarios'
+              print(f'✅ agent.trigger OK ({len(DEMO_SCENARIOS)} scenarios)')
+          except Exception as e:
+              errors.append(f'agent.trigger: {e}')
+
+          try:
+              from inference.inference import classify_anomaly_type, FEATURES
+              assert len(FEATURES) == 8, 'Expected 8 features'
+              print(f'✅ inference OK ({len(FEATURES)} features)')
+          except Exception as e:
+              errors.append(f'inference: {e}')
+
+          # Check critical files exist
+          required = ['requirements.txt', 'main.py']
+          for f in required:
+              if not os.path.exists(f):
+                  errors.append(f'Missing: {f}')
+              else:
+                  print(f'✅ {f} exists')
+
+          if errors:
+              print('\n❌ DEPLOYMENT BLOCKED:')
+              for e in errors:
+                  print(f'   - {e}')
+              sys.exit(1)
+
+          print('\n✅ All deployment checks passed!')
+          "
+
+      - name: Create deployment tag
+        run: |
+          DEPLOY_TAG="deploy-$(date +%Y%m%d-%H%M%S)"
+          echo "DEPLOY_TAG=${DEPLOY_TAG}" >> $GITHUB_ENV
+          git tag ${DEPLOY_TAG}
+          git push origin ${DEPLOY_TAG} || echo "::warning::Could not push tag (permissions)"
+
+      - name: Generate deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tag** | \`${DEPLOY_TAG}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Time** | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Code Quality (lint, format, security)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Unit Tests (Ubuntu + Windows)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧠 Model Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 Integration Tests" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # MONITORING: Pipeline Health Report
+  # ═══════════════════════════════════════════════════════════════════════
+  pipeline-report:
+    name: "📊 Pipeline Report"
+    runs-on: ubuntu-latest
+    needs: [code-quality, unit-tests, model-validation, integration-tests]
+    if: always()
+    steps:
+      - name: Generate pipeline report
+        run: |
+          echo "## 📊 Pipeline Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧠 Model Validation | ${{ needs.model-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Integration | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
