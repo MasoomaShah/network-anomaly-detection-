@@ -26,8 +26,27 @@ from agent import memory
 from agent.trigger import inject_demo_alert, DEMO_SCENARIOS
 from dashboard.process_manager import (
     start_monitoring, stop_monitoring, is_running, get_status,
-    read_log_tail,
+    read_log_tail, INFERENCE_LOG, AGENT_LOG,
 )
+
+# One-time cleanup when Streamlit server starts up
+import dashboard.process_manager as pm
+if not getattr(pm, "_INITIAL_CLEANUP_DONE", False):
+    for path, default in [
+        (ALERTS_PATH, "[]"),
+        (AGENT_STATE_PATH, "{}"),
+        (AGENT_LOG_PATH, "[]"),
+        (LIVE_METRICS_PATH, "{}"),
+        (INFERENCE_LOG, ""),
+        (AGENT_LOG, ""),
+    ]:
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(default)
+        except Exception:
+            pass
+    pm._INITIAL_CLEANUP_DONE = True
 
 # Auto-refresh (install: pip install streamlit-autorefresh)
 try:
@@ -140,7 +159,7 @@ header[data-testid="stHeader"] {
 .astep-a   { border-left-color: #58a6ff; }
 .astep-o   { border-left-color: #3fb950; }
 .astep-e   { border-left-color: #f85149; }
-.astep-f   { border-left-color: #d29922; }
+.astep-f   { border-left-color: #f0883e; }
 .stype {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.68rem;
@@ -464,10 +483,10 @@ with st.sidebar:
     # DNS Section
     st.markdown("---")
     st.markdown("**🌐 DNS Failure**")
-    st.caption("Breaks your DNS so LSTM detects timeout.")
-    st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255', language="powershell")
+    st.caption("Breaks your DNS so LSTM detects timeout. **Must flush cache!**")
+    st.code('netsh interface ip set dns "Wi-Fi" static 10.255.255.255 && ipconfig /flushdns', language="powershell")
     st.caption("☝️ Run in **Admin PowerShell** to break DNS")
-    st.code('netsh interface ip set dns "Wi-Fi" dhcp', language="powershell")
+    st.code('netsh interface ip set dns "Wi-Fi" dhcp && ipconfig /flushdns', language="powershell")
     st.caption("☝️ Run in **Admin PowerShell** to fix DNS")
 
 
@@ -479,8 +498,8 @@ with st.sidebar:
     # Bandwidth Section
     st.markdown("---")
     st.markdown("**🌊 Bandwidth Flood**")
-    st.caption("Saturate bandwidth to detect a spike.")
-    st.code("curl.exe -o NUL http://speedtest.tele2.net/100MB.zip", language="powershell")
+    st.caption("Saturate bandwidth to detect a spike. Run the python script to bypass antivirus blocking:")
+    st.code('python bandwidth_flood.py', language="powershell")
 
     # Unknown Device Section
     st.markdown("---")
@@ -604,9 +623,9 @@ with col_left:
             unsafe_allow_html=True,
         )
     else:
-        step_icons = {"thought": "💭", "action": "⚡", "observation": "👁️", "error": "❌", "final": "✅"}
-        step_cls   = {"thought": "astep-t", "action": "astep-a", "observation": "astep-o", "error": "astep-e", "final": "astep-f"}
-        step_clr   = {"thought": "#bc8cff", "action": "#58a6ff", "observation": "#3fb950", "error": "#f85149", "final": "#d29922"}
+        step_icons = {"thought": "💭", "action": "⚡", "fix": "🔧", "observation": "👁️", "error": "❌", "final": "✅"}
+        step_cls   = {"thought": "astep-t", "action": "astep-a", "fix": "astep-f", "observation": "astep-o", "error": "astep-e", "final": "astep-f"}
+        step_clr   = {"thought": "#bc8cff", "action": "#58a6ff", "fix": "#f0883e", "observation": "#3fb950", "error": "#f85149", "final": "#d29922"}
 
         parts = []
         for step in steps:
@@ -645,9 +664,12 @@ with col_left:
                 unsafe_allow_html=True,
             )
         else:
+            # Check if any fix tools were used
+            has_fix = any(s.get("type") == "fix" for s in steps)
+            report_label = "✅ Diagnosis & Fix Report" if has_fix else "✅ Diagnosis Report"
             st.markdown(
                 f'<div class="diag-box">'
-                f'<div class="diag-hdr">✅ Diagnosis Report</div>'
+                f'<div class="diag-hdr">{report_label}</div>'
                 f'<div class="diag-body">{esc(final[:1000])}</div>'
                 f'</div>',
                 unsafe_allow_html=True,

@@ -67,13 +67,17 @@ def get_bandwidth():
 
 def get_dns_response(domain=DNS_TEST_DOMAIN):
     """Measures DNS resolution time in milliseconds"""
+    old_timeout = socket.getdefaulttimeout()
     try:
+        socket.setdefaulttimeout(3)  # 3s timeout — fail fast when DNS is broken
         start = time.time()
         socket.gethostbyname(domain)
         return round((time.time() - start) * 1000, 2)
     except Exception as e:
         print(f"[dns error] {e}")
         return 9999.0
+    finally:
+        socket.setdefaulttimeout(old_timeout)
 
 
 def get_gateway_ping(gateway=GATEWAY):

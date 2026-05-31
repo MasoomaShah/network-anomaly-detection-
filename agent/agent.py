@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
 
 from agent.config import get_llm
-from agent.tools import TOOL_DEFINITIONS
+from agent.tools import TOOL_DEFINITIONS, FIX_TOOL_NAMES
 from agent.prompts import SYSTEM_PROMPT, build_agent_input
 from agent import memory
 
@@ -88,11 +88,110 @@ def run_agent(alert: dict) -> dict:
                         f"Anomaly detected: {alert.get('anomaly_type', 'unknown')} "
                         f"(severity: {alert.get('severity', 'medium')}). Starting investigation...")
 
+        # ── PRE-AGENT FIX: DNS failure catch-22 ─────────────────────────
+        # Problem: If DNS is broken, we can't reach the OpenAI API to think.
+        # Solution: Fix DNS FIRST, then let the LLM reason and verify.
+        pre_fix_result = None
+        anomaly_type = alert.get("anomaly_type", "")
+
+        if anomaly_type == "dns_failure":
+            from agent.tools import switch_dns, check_dns
+            memory.add_step("thought",
+                            "DNS is broken — OpenAI API needs DNS to work. "
+                            "Fixing DNS first so I can reason about this properly...")
+            memory.write_state("acting", alert_id=alert_id)
+
+            # Try switching to Google DNS
+            pre_fix_result = switch_dns("8.8.8.8")
+            memory.add_step("fix", "🔧 Fixing: switch_dns",
+                            tool="switch_dns", tool_input="8.8.8.8")
+            memory.add_step("observation", pre_fix_result)
+
+            # If Google DNS didn't work, try Cloudflare
+            if "❌" in pre_fix_result or "failed" in pre_fix_result.lower():
+                pre_fix_result = switch_dns("1.1.1.1")
+                memory.add_step("fix", "🔧 Fixing: switch_dns (Cloudflare fallback)",
+                                tool="switch_dns", tool_input="1.1.1.1")
+                memory.add_step("observation", pre_fix_result)
+
+            import time as _time
+            _time.sleep(2)  # let DNS propagate
+
+            # Verify DNS is working now
+            dns_check = check_dns("google.com")
+            memory.add_step("observation", f"DNS verification after fix:\n{dns_check}")
+
+            memory.add_step("thought",
+                            "DNS fix applied. Now connecting to LLM to analyze "
+                            "what happened and produce a full report...")
+            memory.write_state("investigating", alert_id=alert_id)
+
+        elif anomaly_type == "high_packet_loss":
+            from agent.tools import terminate_clumsy, restart_interface
+            memory.add_step("thought",
+                            "High packet loss detected. If this is a simulated disruption using Clumsy, "
+                            "terminating the simulation process first...")
+            memory.write_state("acting", alert_id=alert_id)
+
+            pre_fix_result = terminate_clumsy("")
+            memory.add_step("fix", "🔧 Fixing: terminate_clumsy",
+                            tool="terminate_clumsy", tool_input="")
+            memory.add_step("observation", pre_fix_result)
+
+            # Also restart the network interface to clear any hanging packets/connections
+            memory.add_step("thought", "Restarting network interface to fully restore connectivity...")
+            iface_result = restart_interface("")
+            memory.add_step("fix", "🔧 Fixing: restart_interface",
+                            tool="restart_interface", tool_input="")
+            memory.add_step("observation", iface_result)
+
+            pre_fix_result = f"{pre_fix_result}\n{iface_result}"
+
+            import time as _time
+            _time.sleep(3)
+            memory.add_step("thought", "Fixes applied. Now connecting to LLM for analysis...")
+            memory.write_state("investigating", alert_id=alert_id)
+
+        elif anomaly_type == "gateway_unreachable":
+            # If gateway is unreachable, try restart_interface first
+            # so the LLM API becomes reachable
+            import socket as _socket
+            try:
+                _socket.setdefaulttimeout(5)
+                _socket.gethostbyname("api.openai.com")
+            except Exception:
+                # API unreachable — fix connectivity first
+                from agent.tools import restart_interface
+                memory.add_step("thought",
+                                "Gateway/network appears down — can't reach LLM API. "
+                                "Restarting network interface first...")
+                memory.write_state("acting", alert_id=alert_id)
+
+                pre_fix_result = restart_interface("")
+                memory.add_step("fix", "🔧 Fixing: restart_interface",
+                                tool="restart_interface", tool_input="")
+                memory.add_step("observation", pre_fix_result)
+
+                import time as _time
+                _time.sleep(3)
+
+                memory.add_step("thought",
+                                "Interface restarted. Now connecting to LLM for analysis...")
+                memory.write_state("investigating", alert_id=alert_id)
+
         # Invoke the agent graph
         messages = [
             SystemMessage(content=sys_prompt),
             HumanMessage(content=user_input),
         ]
+
+        # Add context about pre-fix if one was applied
+        if pre_fix_result:
+            messages.append(HumanMessage(
+                content=f"NOTE: Before you started, the system automatically applied a fix:\n"
+                        f"{pre_fix_result}\n\n"
+                        f"Please verify if this fix resolved the issue and provide your analysis."
+            ))
 
         result = agent.invoke({"messages": messages})
 
@@ -111,16 +210,25 @@ def run_agent(alert: dict) -> dict:
                     final_answer = content  # last AI message = final answer
 
                 for tc in tool_calls:
+                    tool_name = tc['name']
+                    is_fix = tool_name in FIX_TOOL_NAMES
+
+                    # Update state to "acting" when a fix tool is called
+                    if is_fix:
+                        memory.write_state("acting", alert_id=alert_id)
+
+                    step_type = "fix" if is_fix else "action"
                     memory.add_step(
-                        "action",
-                        f"Calling: {tc['name']}",
-                        tool=tc["name"],
+                        step_type,
+                        f"{'🔧 Fixing' if is_fix else 'Calling'}: {tool_name}",
+                        tool=tool_name,
                         tool_input=str(tc.get("args", "")),
                     )
                     steps.append({
-                        "tool": tc["name"],
+                        "tool": tool_name,
                         "input": str(tc.get("args", "")),
                         "output": "",
+                        "is_fix": is_fix,
                     })
 
             elif msg_type == "ToolMessage":

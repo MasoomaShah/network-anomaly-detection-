@@ -166,12 +166,15 @@ def run_lstm_watcher(poll_interval: int = 3):
     processed_ids = set()
     _active_thread = None   # track the currently running agent thread
 
-    # Load already-processed IDs
+    # Load already-processed IDs — but keep pending ones so they get picked up
     if os.path.exists(ALERTS_PATH):
         try:
             with open(ALERTS_PATH, "r") as f:
                 for a in json.load(f):
-                    processed_ids.add(a.get("id"))
+                    if a.get("status") != "pending":
+                        processed_ids.add(a.get("id"))
+                        log.info("Skipping old alert #%d (%s) — already %s",
+                                 a.get("id", 0), a.get("anomaly_type", "?"), a.get("status"))
         except Exception:
             pass
 
@@ -184,16 +187,21 @@ def run_lstm_watcher(poll_interval: int = 3):
                 with open(ALERTS_PATH, "r") as f:
                     alerts = json.load(f)
 
+                # Reset processed cache if the alerts file was cleared/truncated
+                max_alert_id = max((a.get("id", 0) for a in alerts), default=0)
+                if processed_ids and (not alerts or max(processed_ids) > max_alert_id):
+                    log.info("Alerts file reset detected - clearing watcher cache")
+                    processed_ids.clear()
+
                 for alert in alerts:
                     aid = alert.get("id")
                     if aid not in processed_ids and alert.get("status") == "pending":
-                        processed_ids.add(aid)
-
                         if agent_busy:
                             log.info("Skipping alert #%d (%s) — agent already investigating",
                                      aid, alert.get("anomaly_type"))
                             continue
 
+                        processed_ids.add(aid)
                         log.warning("New LSTM alert #%d: %s", aid, alert.get("anomaly_type"))
                         # Update dashboard with the alert's metrics
                         if alert.get("metrics"):

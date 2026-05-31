@@ -84,14 +84,13 @@ class TestClassifyAnomalyType:
         assert result is not None
         assert result["anomaly_type"] == "high_latency"
 
-    def test_unexpected_devices(self):
-        """connected_devices > 10 should be unexpected_devices."""
+    def test_unexpected_devices_ignored(self):
+        """Device count alone is NOT classified as an anomaly by rules."""
         metrics = {"packet_loss_pct": 0, "latency_ms": 30, "download_mbps": 10,
                    "upload_mbps": 5, "dns_response_ms": 15, "gateway_ping_ms": 5,
                    "jitter_ms": 3, "connected_devices": 15}
         result = classify_anomaly_type(metrics)
-        assert result is not None
-        assert result["anomaly_type"] == "unexpected_devices"
+        assert result is None
 
     def test_high_jitter(self):
         """Jitter > 80ms should be high_jitter."""

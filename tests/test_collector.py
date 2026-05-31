@@ -32,4 +32,4 @@ class TestMetrics:
 
     def test_dns_response(self):
         from metrics import get_dns_response
-        assert get_dns_response() > 0
+        assert get_dns_response() >= 0

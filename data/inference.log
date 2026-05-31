@@ -1,159 +1,69 @@
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-I0000 00:00:1778522715.552094   62756 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-I0000 00:00:1778522729.475475   62756 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-05-31 18:49:32.343759: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-05-31 18:49:34.831719: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
 ======================================================================
    Network Anomaly Inference — LSTM Primary + Rule-Based Labeling
 ======================================================================
-2026-05-11 23:05:51  INFO      Loading model \u2192 C:\Users\Masooma\dnn_project\models\lstm_autoencoder.h5
-I0000 00:00:1778522751.193785   62756 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX_VNNI AVX_VNNI_INT8 AVX_NE_CONVERT FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-2026-05-11 23:05:51  INFO      Loaded training threshold: 6.637606
-C:\Users\Masooma\anaconda\envs\msenc\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator StandardScaler from version 1.6.1 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
-https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
-  warnings.warn(
-2026-05-11 23:05:51  INFO      Scaler loaded \u2192 C:\Users\Masooma\dnn_project\models\scaler.pkl
-2026-05-11 23:05:53  INFO      Pre-filling buffer with first sample (59 copies) \u2192 LSTM inference starts immediately
-WARNING:tensorflow:TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
-2026-05-11 23:05:54  WARNING   TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
-2026-05-11 23:05:56  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.005 < thr=6.638, but rules detected anomaly)
-[    1] [!] ANOMALY [unexpected_devices] | err=0.005 thr=6.638 | lat=   50.0ms loss=  0.0% dl=  0.03Mbps dns=   19.6ms gw=    3.9ms jitter=   5.0ms dev= 25
-2026-05-11 23:05:56  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #1 \u2192 type=unexpected_devices  severity=medium  error=0.0049  threshold=6.6376  ratio=0.00x
-2026-05-11 23:05:58  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.005 < thr=6.638, but rules detected anomaly)
-[    2] [!] ANOMALY [unexpected_devices] | err=0.005 thr=6.638 | lat=   46.0ms loss=  0.0% dl=  0.14Mbps dns=    1.0ms gw=    3.6ms jitter=   0.0ms dev= 25
-2026-05-11 23:05:58  INFO      LSTM anomaly detected but in cooldown (27s left)
-2026-05-11 23:06:01  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.005 < thr=6.638, but rules detected anomaly)
-[    3] [!] ANOMALY [unexpected_devices] | err=0.005 thr=6.638 | lat=   51.5ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    2.9ms jitter=   3.5ms dev= 25
-2026-05-11 23:06:01  INFO      LSTM anomaly detected but in cooldown (25s left)
-2026-05-11 23:06:04  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.005 < thr=6.638, but rules detected anomaly)
-[    4] [!] ANOMALY [unexpected_devices] | err=0.005 thr=6.638 | lat=   52.5ms loss=  0.0% dl=  0.13Mbps dns=    1.0ms gw=    3.2ms jitter=   4.5ms dev= 25
-2026-05-11 23:06:04  INFO      LSTM anomaly detected but in cooldown (22s left)
-2026-05-11 23:06:07  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[    5] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   53.5ms loss=  0.0% dl=  0.18Mbps dns=    0.9ms gw=    2.5ms jitter=   5.5ms dev= 25
-2026-05-11 23:06:07  INFO      LSTM anomaly detected but in cooldown (19s left)
-2026-05-11 23:06:12  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[    6] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   48.5ms loss=  0.0% dl=  0.11Mbps dns=   26.6ms gw=    2.2ms jitter=   2.5ms dev= 25
-2026-05-11 23:06:12  INFO      LSTM anomaly detected but in cooldown (14s left)
-2026-05-11 23:06:14  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[    7] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   55.0ms loss=  0.0% dl=  0.05Mbps dns=    1.0ms gw=    3.0ms jitter=   7.0ms dev= 25
-2026-05-11 23:06:14  INFO      LSTM anomaly detected but in cooldown (12s left)
-2026-05-11 23:06:16  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[    8] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   55.0ms loss=  0.0% dl=  0.02Mbps dns=    1.6ms gw=    3.9ms jitter=   5.0ms dev= 25
-2026-05-11 23:06:16  INFO      LSTM anomaly detected but in cooldown (9s left)
-2026-05-11 23:06:19  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[    9] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   51.5ms loss=  0.0% dl=  0.08Mbps dns=    1.0ms gw=    4.0ms jitter=   1.5ms dev= 25
-2026-05-11 23:06:19  INFO      LSTM anomaly detected but in cooldown (6s left)
-2026-05-11 23:06:22  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[   10] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   47.5ms loss=  0.0% dl=  0.03Mbps dns=    1.0ms gw=    2.4ms jitter=   1.5ms dev= 25
-2026-05-11 23:06:22  INFO      LSTM anomaly detected but in cooldown (3s left)
-2026-05-11 23:06:26  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.006 < thr=6.638, but rules detected anomaly)
-[   11] [!] ANOMALY [unexpected_devices] | err=0.006 thr=6.638 | lat=   61.0ms loss=  0.0% dl=  0.10Mbps dns=    2.0ms gw=    2.4ms jitter=  13.0ms dev= 25
-2026-05-11 23:06:26  INFO      LSTM anomaly detected but in cooldown (0s left)
-2026-05-11 23:06:29  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.007 < thr=6.638, but rules detected anomaly)
-[   12] [!] ANOMALY [unexpected_devices] | err=0.007 thr=6.638 | lat=   54.0ms loss=  0.0% dl=  0.10Mbps dns=    1.6ms gw=    2.9ms jitter=   1.0ms dev= 25
-2026-05-11 23:06:29  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #2 \u2192 type=unexpected_devices  severity=medium  error=0.0065  threshold=6.6376  ratio=0.00x
-2026-05-11 23:06:32  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.007 < thr=6.638, but rules detected anomaly)
-[   13] [!] ANOMALY [unexpected_devices] | err=0.007 thr=6.638 | lat=   55.0ms loss=  0.0% dl=  0.05Mbps dns=    1.0ms gw=    3.0ms jitter=   9.0ms dev= 25
-2026-05-11 23:06:32  INFO      LSTM anomaly detected but in cooldown (27s left)
-2026-05-11 23:06:35  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.007 < thr=6.638, but rules detected anomaly)
-[   14] [!] ANOMALY [unexpected_devices] | err=0.007 thr=6.638 | lat=   58.5ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    2.2ms jitter=   4.5ms dev= 25
-2026-05-11 23:06:35  INFO      LSTM anomaly detected but in cooldown (23s left)
-2026-05-11 23:06:37  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.007 < thr=6.638, but rules detected anomaly)
-[   15] [!] ANOMALY [unexpected_devices] | err=0.007 thr=6.638 | lat=   51.0ms loss=  0.0% dl=  0.05Mbps dns=    0.0ms gw=    3.1ms jitter=   3.0ms dev= 25
-2026-05-11 23:06:37  INFO      LSTM anomaly detected but in cooldown (21s left)
-2026-05-11 23:06:40  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.007 < thr=6.638, but rules detected anomaly)
-[   16] [!] ANOMALY [unexpected_devices] | err=0.007 thr=6.638 | lat=   57.5ms loss=  0.0% dl=  0.05Mbps dns=    1.0ms gw=    2.3ms jitter=   1.5ms dev= 25
-2026-05-11 23:06:40  INFO      LSTM anomaly detected but in cooldown (18s left)
-2026-05-11 23:06:43  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.008 < thr=6.638, but rules detected anomaly)
-[   17] [!] ANOMALY [unexpected_devices] | err=0.008 thr=6.638 | lat=   61.5ms loss=  0.0% dl=  0.01Mbps dns=    0.0ms gw=    2.9ms jitter=   6.5ms dev= 25
-2026-05-11 23:06:43  INFO      LSTM anomaly detected but in cooldown (15s left)
-2026-05-11 23:06:46  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.008 < thr=6.638, but rules detected anomaly)
-[   18] [!] ANOMALY [unexpected_devices] | err=0.008 thr=6.638 | lat=   62.5ms loss=  0.0% dl=  0.04Mbps dns=    0.0ms gw=    3.6ms jitter=   7.5ms dev= 25
-2026-05-11 23:06:46  INFO      LSTM anomaly detected but in cooldown (12s left)
-2026-05-11 23:06:49  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.008 < thr=6.638, but rules detected anomaly)
-[   19] [!] ANOMALY [unexpected_devices] | err=0.008 thr=6.638 | lat=   54.5ms loss=  0.0% dl=  0.01Mbps dns=    0.0ms gw=    2.5ms jitter=   0.5ms dev= 25
-2026-05-11 23:06:49  INFO      LSTM anomaly detected but in cooldown (9s left)
-2026-05-11 23:06:53  INFO      RULE OVERRIDE: high_latency (LSTM err=0.081 < thr=2.010, but rules detected anomaly)
-[   20] [!] ANOMALY [high_latency] | err=0.081 thr=2.010 | lat=  159.5ms loss=  0.0% dl=  0.54Mbps dns=    1.0ms gw=    4.0ms jitter= 113.5ms dev= 25
-2026-05-11 23:06:53  INFO      LSTM anomaly detected but in cooldown (5s left)
-2026-05-11 23:06:56  INFO      RULE OVERRIDE: high_latency (LSTM err=0.136 < thr=2.016, but rules detected anomaly)
-[   21] [!] ANOMALY [high_latency] | err=0.136 thr=2.016 | lat=  240.5ms loss=  0.0% dl=  0.44Mbps dns=    0.0ms gw=    3.3ms jitter=  97.5ms dev= 25
-2026-05-11 23:06:56  INFO      LSTM anomaly detected but in cooldown (3s left)
-2026-05-11 23:06:58  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.138 < thr=2.022, but rules detected anomaly)
-[   22] [!] ANOMALY [unexpected_devices] | err=0.138 thr=2.022 | lat=   52.0ms loss=  0.0% dl=  0.01Mbps dns=    0.0ms gw=    3.3ms jitter=   1.0ms dev= 25
-2026-05-11 23:06:58  INFO      LSTM anomaly detected but in cooldown (0s left)
-2026-05-11 23:07:01  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.142 < thr=2.027, but rules detected anomaly)
-[   23] [!] ANOMALY [unexpected_devices] | err=0.142 thr=2.027 | lat=   48.0ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    2.7ms jitter=   2.0ms dev= 25
-2026-05-11 23:07:01  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #3 \u2192 type=unexpected_devices  severity=medium  error=0.1421  threshold=2.0269  ratio=0.07x
-2026-05-11 23:07:04  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.145 < thr=2.032, but rules detected anomaly)
-[   24] [!] ANOMALY [unexpected_devices] | err=0.145 thr=2.032 | lat=   49.0ms loss=  0.0% dl=  0.07Mbps dns=    0.0ms gw=    2.1ms jitter=   3.0ms dev= 25
-2026-05-11 23:07:04  INFO      LSTM anomaly detected but in cooldown (26s left)
-2026-05-11 23:07:07  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.146 < thr=2.036, but rules detected anomaly)
-[   25] [!] ANOMALY [unexpected_devices] | err=0.146 thr=2.036 | lat=   62.0ms loss=  0.0% dl=  0.19Mbps dns=    0.0ms gw=    3.9ms jitter=  15.0ms dev= 25
-2026-05-11 23:07:07  INFO      LSTM anomaly detected but in cooldown (23s left)
-2026-05-11 23:07:10  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.147 < thr=2.041, but rules detected anomaly)
-[   26] [!] ANOMALY [unexpected_devices] | err=0.147 thr=2.041 | lat=   54.5ms loss=  0.0% dl=  0.16Mbps dns=    0.0ms gw=    3.8ms jitter=   2.5ms dev= 25
-2026-05-11 23:07:10  INFO      LSTM anomaly detected but in cooldown (20s left)
-2026-05-11 23:07:13  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.182 < thr=2.046, but rules detected anomaly)
-[   27] [!] ANOMALY [unexpected_devices] | err=0.182 thr=2.046 | lat=   53.5ms loss=  0.0% dl=  0.06Mbps dns=    0.0ms gw=    3.5ms jitter=   6.5ms dev= 25
-2026-05-11 23:07:13  INFO      LSTM anomaly detected but in cooldown (17s left)
-2026-05-11 23:07:16  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.184 < thr=2.051, but rules detected anomaly)
-[   28] [!] ANOMALY [unexpected_devices] | err=0.184 thr=2.051 | lat=   66.5ms loss=  0.0% dl=  0.06Mbps dns=    0.0ms gw=    2.4ms jitter=  18.5ms dev= 25
-2026-05-11 23:07:16  INFO      LSTM anomaly detected but in cooldown (14s left)
-2026-05-11 23:07:20  INFO      RULE OVERRIDE: high_packet_loss (LSTM err=0.473 < thr=2.065, but rules detected anomaly)
-[   29] [!] ANOMALY [high_packet_loss] | err=0.473 thr=2.065 | lat=   61.0ms loss= 50.0% dl=  0.18Mbps dns=    0.6ms gw=    3.1ms jitter=   0.0ms dev= 25
-2026-05-11 23:07:20  INFO      LSTM anomaly detected but in cooldown (11s left)
-2026-05-11 23:07:22  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.595 < thr=2.083, but rules detected anomaly)
-[   30] [!] ANOMALY [unexpected_devices] | err=0.595 thr=2.083 | lat=   48.0ms loss=  0.0% dl=  0.07Mbps dns=    0.0ms gw=    3.4ms jitter=   2.0ms dev= 25
-2026-05-11 23:07:22  INFO      LSTM anomaly detected but in cooldown (8s left)
-2026-05-11 23:07:25  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.690 < thr=2.103, but rules detected anomaly)
-[   31] [!] ANOMALY [unexpected_devices] | err=0.690 thr=2.103 | lat=   54.0ms loss=  0.0% dl=  0.12Mbps dns=    0.0ms gw=    2.2ms jitter=   6.0ms dev= 25
-2026-05-11 23:07:25  INFO      LSTM anomaly detected but in cooldown (5s left)
-2026-05-11 23:07:29  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.647 < thr=2.120, but rules detected anomaly)
-[   32] [!] ANOMALY [unexpected_devices] | err=0.647 thr=2.120 | lat=   51.5ms loss=  0.0% dl=  1.27Mbps dns=    1.8ms gw=    2.4ms jitter=   4.5ms dev= 25
-2026-05-11 23:07:29  INFO      LSTM anomaly detected but in cooldown (2s left)
-2026-05-11 23:07:31  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.542 < thr=2.132, but rules detected anomaly)
-[   33] [!] ANOMALY [unexpected_devices] | err=0.542 thr=2.132 | lat=   50.0ms loss=  0.0% dl=  0.09Mbps dns=    1.6ms gw=    3.2ms jitter=   3.0ms dev= 25
-2026-05-11 23:07:31  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #4 \u2192 type=unexpected_devices  severity=medium  error=0.5419  threshold=2.1324  ratio=0.25x
-2026-05-11 23:07:34  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.490 < thr=2.143, but rules detected anomaly)
-[   34] [!] ANOMALY [unexpected_devices] | err=0.490 thr=2.143 | lat=   64.5ms loss=  0.0% dl=  0.12Mbps dns=    1.0ms gw=    2.2ms jitter=   6.5ms dev= 25
-2026-05-11 23:07:34  INFO      LSTM anomaly detected but in cooldown (27s left)
-2026-05-11 23:07:37  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.462 < thr=2.152, but rules detected anomaly)
-[   35] [!] ANOMALY [unexpected_devices] | err=0.462 thr=2.152 | lat=   74.0ms loss=  0.0% dl=  0.04Mbps dns=    1.0ms gw=    3.6ms jitter=  21.0ms dev= 25
-2026-05-11 23:07:37  INFO      LSTM anomaly detected but in cooldown (24s left)
-2026-05-11 23:07:40  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.448 < thr=2.160, but rules detected anomaly)
-[   36] [!] ANOMALY [unexpected_devices] | err=0.448 thr=2.160 | lat=   70.0ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    2.4ms jitter=   6.0ms dev= 25
-2026-05-11 23:07:40  INFO      LSTM anomaly detected but in cooldown (21s left)
-2026-05-11 23:07:43  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.440 < thr=2.168, but rules detected anomaly)
-[   37] [!] ANOMALY [unexpected_devices] | err=0.440 thr=2.168 | lat=   49.0ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    2.1ms jitter=   3.0ms dev= 25
-2026-05-11 23:07:43  INFO      LSTM anomaly detected but in cooldown (18s left)
-2026-05-11 23:07:46  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.437 < thr=2.175, but rules detected anomaly)
-[   38] [!] ANOMALY [unexpected_devices] | err=0.437 thr=2.175 | lat=   53.0ms loss=  0.0% dl=  0.04Mbps dns=    0.0ms gw=    2.2ms jitter=   3.0ms dev= 25
-2026-05-11 23:07:46  INFO      LSTM anomaly detected but in cooldown (15s left)
-2026-05-11 23:07:49  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.891 < thr=2.193, but rules detected anomaly)
-[   39] [!] ANOMALY [unexpected_devices] | err=0.891 thr=2.193 | lat=   84.0ms loss=  0.0% dl=  0.11Mbps dns=    1.0ms gw=    2.6ms jitter=  32.0ms dev= 25
-2026-05-11 23:07:49  INFO      LSTM anomaly detected but in cooldown (12s left)
-2026-05-11 23:07:52  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.854 < thr=2.210, but rules detected anomaly)
-[   40] [!] ANOMALY [unexpected_devices] | err=0.854 thr=2.210 | lat=   55.0ms loss=  0.0% dl=  0.07Mbps dns=    0.5ms gw=    2.8ms jitter=   5.0ms dev= 25
-2026-05-11 23:07:52  INFO      LSTM anomaly detected but in cooldown (9s left)
-2026-05-11 23:07:55  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.740 < thr=2.223, but rules detected anomaly)
-[   41] [!] ANOMALY [unexpected_devices] | err=0.740 thr=2.223 | lat=   52.0ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    2.3ms jitter=   2.0ms dev= 25
-2026-05-11 23:07:55  INFO      LSTM anomaly detected but in cooldown (6s left)
-2026-05-11 23:07:58  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.687 < thr=2.234, but rules detected anomaly)
-[   42] [!] ANOMALY [unexpected_devices] | err=0.687 thr=2.234 | lat=   63.5ms loss=  0.0% dl=  0.05Mbps dns=    0.0ms gw=    2.3ms jitter=  16.5ms dev= 25
-2026-05-11 23:07:58  INFO      LSTM anomaly detected but in cooldown (3s left)
-2026-05-11 23:08:01  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.664 < thr=2.244, but rules detected anomaly)
-[   43] [!] ANOMALY [unexpected_devices] | err=0.664 thr=2.244 | lat=   73.0ms loss=  0.0% dl=  0.04Mbps dns=    1.0ms gw=    2.9ms jitter=  27.0ms dev= 25
-2026-05-11 23:08:01  INFO      LSTM anomaly detected but in cooldown (0s left)
-2026-05-11 23:08:04  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.654 < thr=2.253, but rules detected anomaly)
-[   44] [!] ANOMALY [unexpected_devices] | err=0.654 thr=2.253 | lat=   76.5ms loss=  0.0% dl=  0.09Mbps dns=    1.0ms gw=    3.5ms jitter=   8.5ms dev= 25
-2026-05-11 23:08:04  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #5 \u2192 type=unexpected_devices  severity=medium  error=0.6543  threshold=2.2531  ratio=0.29x
-2026-05-11 23:08:07  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.648 < thr=2.262, but rules detected anomaly)
-[   45] [!] ANOMALY [unexpected_devices] | err=0.648 thr=2.262 | lat=   72.5ms loss=  0.0% dl=  0.08Mbps dns=    1.0ms gw=    2.2ms jitter=   9.5ms dev= 25
-2026-05-11 23:08:07  INFO      LSTM anomaly detected but in cooldown (26s left)
-2026-05-11 23:08:10  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.645 < thr=2.270, but rules detected anomaly)
-[   46] [!] ANOMALY [unexpected_devices] | err=0.645 thr=2.270 | lat=   60.5ms loss=  0.0% dl=  0.03Mbps dns=    1.0ms gw=    3.7ms jitter=  10.5ms dev= 25
-2026-05-11 23:08:10  INFO      LSTM anomaly detected but in cooldown (23s left)
-2026-05-11 23:08:13  INFO      RULE OVERRIDE: unexpected_devices (LSTM err=0.642 < thr=2.278, but rules detected anomaly)
-[   47] [!] ANOMALY [unexpected_devices] | err=0.642 thr=2.278 | lat=   47.5ms loss=  0.0% dl=  0.05Mbps dns=    0.0ms gw=    2.9ms jitter=   2.5ms dev= 25
-2026-05-11 23:08:13  INFO      LSTM anomaly detected but in cooldown (20s left)
+2026-05-31 18:49:41  INFO      Loading model \u2192 C:\Users\H\Desktop\DNN\models\lstm_autoencoder.h5
+2026-05-31 18:49:41.355758: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-05-31 18:49:41  INFO      Loaded training threshold: 6.637606 (used as safety net during calibration)
+2026-05-31 18:49:41  INFO      Scaler loaded \u2192 C:\Users\H\Desktop\DNN\models\scaler.pkl  (type=StandardScaler)
+2026-05-31 18:49:53  INFO      Pre-filling buffer with first sample (59 copies) \u2192 LSTM inference starts immediately
+[    1] [OK] normal  | err=0.036 thr=6.638 | lat=   60.0ms loss=  0.0% dl=  0.04Mbps dns=   20.1ms gw=   20.8ms jitter=  13.4ms dev=  7
+[    2] [OK] normal  | err=0.044 thr=6.638 | lat=   61.2ms loss=  0.0% dl=  0.56Mbps dns=    0.7ms gw=   81.8ms jitter=  17.0ms dev=  7
+[    3] [OK] normal  | err=0.043 thr=6.638 | lat=   54.0ms loss=  0.0% dl=  0.06Mbps dns=   15.0ms gw=   14.8ms jitter=   4.8ms dev=  7
+[    4] [OK] normal  | err=0.043 thr=6.638 | lat=   60.5ms loss=  0.0% dl=  0.43Mbps dns=    0.0ms gw=    1.8ms jitter=  17.5ms dev=  7
+[    5] [OK] normal  | err=0.043 thr=6.638 | lat=   48.0ms loss=  0.0% dl=  0.01Mbps dns=    9.2ms gw=   26.5ms jitter=   7.5ms dev=  8
+2026-05-31 18:51:36  INFO      Rule detected high_latency but waiting for 1/2 consecutive hits
+[    6] [OK] normal  | err=0.122 thr=6.638 | lat=  178.0ms loss=  0.0% dl=  4.97Mbps dns=  486.7ms gw=  180.8ms jitter=  85.5ms dev=  8
+2026-05-31 18:52:07  INFO      RULE OVERRIDE: high_latency (LSTM err=0.161 < thr=6.638, 2 consecutive hits)
+[    7] [!] ANOMALY [high_latency] | err=0.161 thr=6.638 | lat=  153.0ms loss=  0.0% dl=  0.07Mbps dns=    9.8ms gw=  153.0ms jitter=  29.9ms dev=  7
+2026-05-31 18:52:07  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #1 \u2192 type=high_latency  severity=medium  error=0.1613  threshold=6.6376  ratio=0.02x
+[    8] [OK] normal  | err=0.161 thr=6.638 | lat=   44.2ms loss=  0.0% dl=  0.05Mbps dns=    0.0ms gw=   30.8ms jitter=   2.2ms dev=  8
+2026-05-31 18:53:14  INFO      Rule detected high_latency but waiting for 1/2 consecutive hits
+[    9] [OK] normal  | err=0.176 thr=6.638 | lat=  159.0ms loss=  0.0% dl=  0.36Mbps dns=   40.0ms gw=    8.2ms jitter=  51.1ms dev=  8
+[   10] [OK] normal  | err=0.178 thr=6.638 | lat=   46.8ms loss=  0.0% dl=  0.04Mbps dns=   18.9ms gw=    4.8ms jitter=   5.4ms dev=  8
+[dns error] [Errno 11001] getaddrinfo failed
+2026-05-31 18:58:15  INFO      Rule detected dns_failure but waiting for 1/2 consecutive hits
+[   11] [OK] normal  | err=0.384 thr=6.638 | lat=   45.8ms loss=  0.0% dl=  0.03Mbps dns= 2000.0ms gw=    3.2ms jitter=   2.8ms dev=  7
+[dns error] [Errno 11001] getaddrinfo failed
+2026-05-31 18:59:18  INFO      RULE OVERRIDE: dns_failure (LSTM err=0.687 < thr=6.638, 2 consecutive hits)
+[   12] [!] ANOMALY [dns_failure] | err=0.687 thr=6.638 | lat=   50.0ms loss=  0.0% dl=  0.02Mbps dns= 2000.0ms gw=   31.8ms jitter=   5.4ms dev=  7
+2026-05-31 18:59:18  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #2 \u2192 type=dns_failure  severity=high  error=0.6868  threshold=6.6376  ratio=0.10x
+[dns error] [Errno 11001] getaddrinfo failed
+2026-05-31 19:02:00  INFO      RULE OVERRIDE: dns_failure (LSTM err=0.695 < thr=6.638, 3 consecutive hits)
+[   13] [!] ANOMALY [dns_failure] | err=0.695 thr=6.638 | lat=   49.0ms loss=  0.0% dl=  0.00Mbps dns= 2000.0ms gw=   11.8ms jitter=   4.3ms dev=  8
+2026-05-31 19:02:00  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #3 \u2192 type=dns_failure  severity=high  error=0.6949  threshold=6.6376  ratio=0.10x
+[   14] [OK] normal  | err=0.752 thr=6.638 | lat=   43.5ms loss=  0.0% dl=  0.05Mbps dns=   61.3ms gw=    9.0ms jitter=   1.1ms dev=  8
+[   15] [OK] normal  | err=0.726 thr=6.638 | lat=   61.5ms loss=  0.0% dl=  0.06Mbps dns=    0.0ms gw=    4.2ms jitter=  25.8ms dev=  8
+[   16] [OK] normal  | err=0.718 thr=6.638 | lat=   43.8ms loss=  0.0% dl=  0.04Mbps dns=   14.2ms gw=    7.2ms jitter=   1.9ms dev=  8
+[   17] [OK] normal  | err=0.697 thr=6.638 | lat=   49.8ms loss=  0.0% dl=  0.01Mbps dns=    0.0ms gw=    6.2ms jitter=   3.7ms dev=  8
+[   18] [OK] normal  | err=0.664 thr=6.638 | lat=   51.0ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=   19.8ms jitter=   5.5ms dev=  7
+[   19] [OK] normal  | err=0.647 thr=6.638 | lat=   43.0ms loss=  0.0% dl=  0.06Mbps dns=    0.0ms gw=   22.8ms jitter=   0.0ms dev=  8
+[   20] [OK] normal  | err=0.647 thr=2.381 | lat=   43.8ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    3.8ms jitter=   0.4ms dev=  7
+[   21] [OK] normal  | err=0.646 thr=2.394 | lat=   45.0ms loss=  0.0% dl=  0.02Mbps dns=    1.2ms gw=    5.2ms jitter=   4.6ms dev=  6
+[   22] [OK] normal  | err=0.643 thr=2.405 | lat=   58.8ms loss=  0.0% dl=  0.02Mbps dns=    0.0ms gw=    7.0ms jitter=  23.9ms dev=  8
+[   23] [OK] normal  | err=0.647 thr=2.416 | lat=   42.2ms loss=  0.0% dl=  0.05Mbps dns=    9.1ms gw=    2.0ms jitter=   0.4ms dev=  8
+[   24] [OK] normal  | err=0.643 thr=2.425 | lat=   43.2ms loss=  0.0% dl=  0.03Mbps dns=    0.0ms gw=    3.0ms jitter=   0.8ms dev=  8
+[   25] [!] ANOMALY [high_packet_loss] | err=2.715 thr=2.629 | lat=    0.0ms loss=100.0% dl=  0.01Mbps dns=   20.2ms gw=    1.8ms jitter=   0.0ms dev=  8
+2026-05-31 19:07:31  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #4 \u2192 type=high_packet_loss  severity=high  error=2.7148  threshold=2.6289  ratio=1.03x
+[dns error] [Errno 11001] getaddrinfo failed
+[   26] [!] ANOMALY [high_packet_loss] | err=5.599 thr=5.137 | lat=   45.5ms loss= 50.0% dl=  0.02Mbps dns= 2000.0ms gw=  999.0ms jitter=   1.5ms dev=  0
+2026-05-31 19:07:43  INFO      LSTM anomaly detected but in cooldown (18s left)
+[dns error] [Errno 11004] getaddrinfo failed
+[   27] [!] ANOMALY [high_packet_loss] | err=9.035 thr=8.661 | lat=    0.0ms loss=100.0% dl=  0.02Mbps dns= 2000.0ms gw=  999.0ms jitter=   0.0ms dev=  0
+2026-05-31 19:07:51  INFO      LSTM anomaly detected but in cooldown (10s left)
+[dns error] [Errno 11004] getaddrinfo failed
+2026-05-31 19:07:59  INFO      Rule detected high_packet_loss but waiting for 1/2 consecutive hits
+[   28] [OK] normal  | err=10.113 thr=11.437 | lat=    0.0ms loss=100.0% dl=  0.03Mbps dns= 2000.0ms gw=  999.0ms jitter=   0.0ms dev=  0
+[dns error] [Errno 11004] getaddrinfo failed
+2026-05-31 19:08:07  INFO      RULE OVERRIDE: high_packet_loss (LSTM err=9.358 < thr=13.134, 2 consecutive hits)
+[   29] [!] ANOMALY [high_packet_loss] | err=9.358 thr=13.134 | lat=    0.0ms loss=100.0% dl=  0.00Mbps dns= 2000.0ms gw=  999.0ms jitter=   0.0ms dev=  0
+2026-05-31 19:08:07  WARNING   \U0001f6a8 LSTM ANOMALY ALERT #5 \u2192 type=high_packet_loss  severity=high  error=9.3581  threshold=13.1342  ratio=0.71x
+[dns error] [Errno 11004] getaddrinfo failed
+2026-05-31 19:08:22  INFO      RULE OVERRIDE: high_packet_loss (LSTM err=9.144 < thr=14.414, 3 consecutive hits)
+[   30] [!] ANOMALY [high_packet_loss] | err=9.144 thr=14.414 | lat=    0.0ms loss=100.0% dl=  0.01Mbps dns= 2000.0ms gw=    5.5ms jitter=   0.0ms dev=  7
+2026-05-31 19:08:22  INFO      LSTM anomaly detected but in cooldown (15s left)
+[   31] [OK] normal  | err=11.603 thr=16.311 | lat=   44.8ms loss=  0.0% dl=  0.09Mbps dns=   48.7ms gw=    7.8ms jitter=   1.8ms dev=  8
+[   32] [OK] normal  | err=11.776 thr=17.907 | lat=   57.8ms loss=  0.0% dl=  0.03Mbps dns=    0.5ms gw=    7.2ms jitter=  15.9ms dev=  7
+[   33] [OK] normal  | err=11.978 thr=19.295 | lat=   51.8ms loss=  0.0% dl=  0.07Mbps dns=    0.0ms gw=    8.2ms jitter=   9.3ms dev=  8

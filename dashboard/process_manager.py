@@ -39,6 +39,19 @@ def start_monitoring():
 
         python = sys.executable  # same Python that runs Streamlit
 
+        # Clear/reset alerts and agent state at start of monitoring session
+        from agent.config import ALERTS_PATH, AGENT_STATE_PATH, AGENT_LOG_PATH
+        for path, default in [
+            (ALERTS_PATH, "[]"),
+            (AGENT_STATE_PATH, "{}"),
+            (AGENT_LOG_PATH, "[]"),
+        ]:
+            try:
+                with open(path, "w") as f:
+                    f.write(default)
+            except Exception:
+                pass
+
         # Clear old logs
         for lp in [INFERENCE_LOG, AGENT_LOG]:
             with open(lp, "w") as f:

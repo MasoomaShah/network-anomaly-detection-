@@ -317,6 +317,339 @@ def get_current_metrics(_: str = "") -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# 6. RESTART NETWORK INTERFACE  (FIX TOOL)
+# ─────────────────────────────────────────────────────────────────────────
+def restart_interface(input_str: str = "") -> str:
+    """Restart the network interface to fix connectivity issues.
+    Input: optional interface name (default: auto-detect active Wi-Fi/Ethernet).
+    On Windows runs 'ipconfig /release' + 'ipconfig /renew'.
+    Example: '' or 'Wi-Fi'"""
+    iface = input_str.strip() if input_str.strip() else None
+
+    try:
+        if IS_WINDOWS:
+            # Step 1: Release IP
+            release_cmd = ["ipconfig", "/release"]
+            if iface:
+                release_cmd.append(iface)
+            result_rel = subprocess.run(
+                release_cmd, capture_output=True, text=True, timeout=15
+            )
+
+            time.sleep(2)
+
+            # Step 2: Renew IP
+            renew_cmd = ["ipconfig", "/renew"]
+            if iface:
+                renew_cmd.append(iface)
+            result_ren = subprocess.run(
+                renew_cmd, capture_output=True, text=True, timeout=30
+            )
+
+            # Step 3: Flush DNS cache for good measure
+            subprocess.run(
+                ["ipconfig", "/flushdns"],
+                capture_output=True, text=True, timeout=10
+            )
+
+            # Check if renew succeeded
+            if "Windows IP Configuration" in result_ren.stdout:
+                return (
+                    f"✅ Network interface restarted successfully.\n"
+                    f"  Release: completed\n"
+                    f"  Renew: completed\n"
+                    f"  DNS cache: flushed\n"
+                    f"  Interface should be back online."
+                )
+            else:
+                error_out = result_ren.stderr or result_ren.stdout
+                return (
+                    f"⚠️ Interface restart partially completed.\n"
+                    f"  Release: completed\n"
+                    f"  Renew output: {error_out[:300]}\n"
+                    f"  Try running as Administrator if this failed."
+                )
+        else:
+            # Linux: restart via ip/ifconfig
+            iface = iface or "eth0"
+            subprocess.run(["sudo", "ip", "link", "set", iface, "down"],
+                           capture_output=True, text=True, timeout=10)
+            time.sleep(2)
+            subprocess.run(["sudo", "ip", "link", "set", iface, "up"],
+                           capture_output=True, text=True, timeout=10)
+            time.sleep(3)
+            return f"✅ Interface {iface} restarted (down → up). Network should be back online."
+
+    except subprocess.TimeoutExpired:
+        return "⚠️ Interface restart timed out. The network may still be recovering."
+    except Exception as e:
+        return f"❌ Interface restart error: {e}"
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# 7. SWITCH DNS SERVER  (FIX TOOL)
+# ─────────────────────────────────────────────────────────────────────────
+def switch_dns(input_str: str = "") -> str:
+    """Switch the DNS server to fix DNS resolution failures.
+    Input: DNS server IP (default: '8.8.8.8'). Example: '8.8.8.8' or '1.1.1.1'"""
+    dns_server = input_str.strip() if input_str.strip() else "8.8.8.8"
+
+    # Map friendly names
+    dns_names = {
+        "8.8.8.8": "Google DNS",
+        "8.8.4.4": "Google DNS (secondary)",
+        "1.1.1.1": "Cloudflare DNS",
+        "1.0.0.1": "Cloudflare DNS (secondary)",
+        "208.67.222.222": "OpenDNS",
+    }
+    dns_label = dns_names.get(dns_server, dns_server)
+
+    try:
+        if IS_WINDOWS:
+            # Detect the active network interface name
+            iface_name = _detect_active_interface()
+
+            # Set primary DNS
+            result = subprocess.run(
+                ["netsh", "interface", "ip", "set", "dns",
+                 iface_name, "static", dns_server],
+                capture_output=True, text=True, timeout=15
+            )
+
+            if result.returncode != 0:
+                error = result.stderr or result.stdout
+                if "access is denied" in error.lower() or "requires elevation" in error.lower():
+                    return (
+                        f"❌ Cannot switch DNS — requires Administrator privileges.\n"
+                        f"  Manual fix: Run PowerShell as Admin and execute:\n"
+                        f'  netsh interface ip set dns "{iface_name}" static {dns_server}'
+                    )
+                return f"⚠️ DNS switch may have failed: {error[:300]}"
+
+            # Flush DNS cache
+            subprocess.run(["ipconfig", "/flushdns"],
+                           capture_output=True, text=True, timeout=10)
+
+            # Verify DNS is working
+            time.sleep(1)
+            try:
+                start = time.time()
+                socket.gethostbyname("google.com")
+                elapsed = round((time.time() - start) * 1000, 1)
+                return (
+                    f"✅ DNS switched to {dns_server} ({dns_label}) on interface '{iface_name}'.\n"
+                    f"  DNS cache flushed.\n"
+                    f"  Verification: google.com resolved in {elapsed} ms — DNS is working!"
+                )
+            except socket.gaierror:
+                return (
+                    f"⚠️ DNS switched to {dns_server} ({dns_label}) on interface '{iface_name}',\n"
+                    f"  but verification failed — google.com still not resolving.\n"
+                    f"  DNS cache was flushed. It may take a few seconds to propagate."
+                )
+        else:
+            # Linux: write to resolv.conf
+            try:
+                with open("/etc/resolv.conf", "w") as f:
+                    f.write(f"nameserver {dns_server}\n")
+                return f"✅ DNS switched to {dns_server} ({dns_label}) via /etc/resolv.conf."
+            except PermissionError:
+                return (
+                    f"❌ Cannot write /etc/resolv.conf — need sudo.\n"
+                    f"  Manual fix: sudo sh -c 'echo nameserver {dns_server} > /etc/resolv.conf'"
+                )
+
+    except subprocess.TimeoutExpired:
+        return f"⚠️ DNS switch timed out."
+    except Exception as e:
+        return f"❌ DNS switch error: {e}"
+
+
+def _detect_active_interface() -> str:
+    """Detect the active network interface name on Windows."""
+    try:
+        result = subprocess.run(
+            ["netsh", "interface", "show", "interface"],
+            capture_output=True, text=True, timeout=10
+        )
+        for line in result.stdout.split("\n"):
+            line = line.strip()
+            if "Connected" in line:
+                # Format: Admin State    State    Type    Interface Name
+                parts = line.split()
+                # Interface name is everything after the type column
+                if len(parts) >= 4:
+                    # Find "Connected" position and extract interface name
+                    idx = line.find("Connected")
+                    after = line[idx + len("Connected"):].strip()
+                    # Skip the type column (Dedicated/...)
+                    type_and_name = after.split(None, 1)
+                    if len(type_and_name) >= 2:
+                        return type_and_name[1].strip()
+    except Exception:
+        pass
+    return "Wi-Fi"  # fallback default
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# 8. TERMINATE CLUMSY SIMULATION  (FIX TOOL)
+# ─────────────────────────────────────────────────────────────────────────
+def terminate_clumsy(input_str: str = "") -> str:
+    """FIX TOOL: Terminate the Clumsy simulation process to resolve packet loss.
+    Input: ignored — just pass empty string."""
+    try:
+        if IS_WINDOWS:
+            import psutil
+            import subprocess
+            
+            # Check if clumsy is active (works for all privilege levels)
+            check_proc = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq clumsy.exe"],
+                capture_output=True, text=True, timeout=10
+            )
+            is_clumsy_running = "clumsy.exe" in check_proc.stdout.lower()
+            
+            if not is_clumsy_running:
+                return "ℹ️ Clumsy simulation process was not active."
+                
+            # Try killing using psutil
+            for proc in psutil.process_iter(['name']):
+                try:
+                    if proc.info['name'] and proc.info['name'].lower() == 'clumsy.exe':
+                        proc.kill()
+                except Exception:
+                    pass
+                    
+            # Double check if still running
+            check_proc = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq clumsy.exe"],
+                capture_output=True, text=True, timeout=10
+            )
+            if "clumsy.exe" not in check_proc.stdout.lower():
+                return "✅ Successfully terminated the Clumsy packet loss simulation. Packet loss should return to 0%."
+                
+            # Try taskkill as fallback
+            subprocess.run(
+                ["taskkill", "/f", "/im", "clumsy.exe"],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            # Check one last time
+            check_proc = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq clumsy.exe"],
+                capture_output=True, text=True, timeout=10
+            )
+            if "clumsy.exe" not in check_proc.stdout.lower():
+                return "✅ Successfully terminated the Clumsy process via taskkill."
+                
+            return "⚠️ Clumsy is active but could not be terminated automatically because the Agent is not running as Administrator. Please close the Clumsy application window manually or run this command in an Administrator terminal:\n\ntaskkill /f /im clumsy.exe"
+        else:
+            return "ℹ️ Clumsy is a Windows-only application."
+    except Exception as e:
+        return f"❌ Error terminating Clumsy: {e}"
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# 9. BLOCK DEVICE BY MAC ADDRESS  (FIX TOOL)
+# ─────────────────────────────────────────────────────────────────────────
+def block_device(mac_address: str) -> str:
+    """Block a suspicious device on the network by its MAC address.
+    Input: MAC address to block. Example: 'aa-bb-cc-dd-ee-ff' or 'aa:bb:cc:dd:ee:ff'"""
+    mac = mac_address.strip().lower().replace(":", "-")
+
+    if not mac or len(mac) < 12:
+        return "❌ Invalid MAC address. Provide a full MAC like 'aa-bb-cc-dd-ee-ff'."
+
+    try:
+        # Look up the IP for this MAC from ARP table
+        ip_address = None
+        result = subprocess.run(["arp", "-a"], capture_output=True, text=True, timeout=10)
+        for line in result.stdout.split("\n"):
+            line_lower = line.strip().lower()
+            mac_normalized = mac.replace("-", "-")
+            if mac_normalized in line_lower:
+                parts = line.strip().split()
+                if parts:
+                    ip_address = parts[0]
+                    break
+
+        if not ip_address:
+            return (
+                f"⚠️ Could not find IP for MAC {mac} in ARP table.\n"
+                f"  The device may have disconnected or the ARP cache expired.\n"
+                f"  Device flagged for monitoring — will alert if it reconnects."
+            )
+
+        if IS_WINDOWS:
+            # Create Windows Firewall rule to block the device's IP
+            rule_name = f"AGENT_BLOCK_{mac.replace('-', '')}"
+
+            # Block inbound traffic from the device
+            result_in = subprocess.run(
+                ["netsh", "advfirewall", "firewall", "add", "rule",
+                 f"name={rule_name}_IN",
+                 "dir=in", "action=block",
+                 f"remoteip={ip_address}",
+                 "protocol=any"],
+                capture_output=True, text=True, timeout=15
+            )
+
+            # Block outbound traffic to the device
+            result_out = subprocess.run(
+                ["netsh", "advfirewall", "firewall", "add", "rule",
+                 f"name={rule_name}_OUT",
+                 "dir=out", "action=block",
+                 f"remoteip={ip_address}",
+                 "protocol=any"],
+                capture_output=True, text=True, timeout=15
+            )
+
+            if result_in.returncode == 0 and result_out.returncode == 0:
+                return (
+                    f"✅ Device BLOCKED successfully.\n"
+                    f"  MAC: {mac}\n"
+                    f"  IP:  {ip_address}\n"
+                    f"  Firewall rules added: {rule_name}_IN, {rule_name}_OUT\n"
+                    f"  All traffic to/from {ip_address} is now blocked.\n"
+                    f"  To unblock later: netsh advfirewall firewall delete rule name={rule_name}_IN"
+                )
+            else:
+                error = result_in.stderr or result_out.stderr or result_in.stdout
+                if "access is denied" in error.lower() or "requires elevation" in error.lower():
+                    return (
+                        f"❌ Cannot block device — requires Administrator privileges.\n"
+                        f"  Device: MAC={mac}, IP={ip_address}\n"
+                        f"  Manual fix: Run PowerShell as Admin and execute:\n"
+                        f'  netsh advfirewall firewall add rule name="{rule_name}_IN" '
+                        f'dir=in action=block remoteip={ip_address} protocol=any'
+                    )
+                return f"⚠️ Firewall rule may have failed: {error[:300]}"
+        else:
+            # Linux: use iptables
+            subprocess.run(
+                ["sudo", "iptables", "-A", "INPUT", "-m", "mac",
+                 "--mac-source", mac.replace("-", ":"), "-j", "DROP"],
+                capture_output=True, text=True, timeout=10
+            )
+            return (
+                f"✅ Device blocked via iptables.\n"
+                f"  MAC: {mac}\n"
+                f"  All incoming traffic from this device is now dropped."
+            )
+
+    except subprocess.TimeoutExpired:
+        return f"⚠️ Block command timed out for MAC {mac}."
+    except Exception as e:
+        return f"❌ Block device error: {e}"
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# FIX TOOL NAMES — used by agent.py to detect fix actions
+# ─────────────────────────────────────────────────────────────────────────
+FIX_TOOL_NAMES = {"restart_interface", "switch_dns", "block_device", "terminate_clumsy"}
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # TOOL REGISTRY — used by agent.py
 # ─────────────────────────────────────────────────────────────────────────
 TOOL_DEFINITIONS = [
@@ -361,7 +694,43 @@ TOOL_DEFINITIONS = [
             "Input: domain name. Example: 'google.com'"
         ),
     },
-
+    {
+        "name": "restart_interface",
+        "func": restart_interface,
+        "description": (
+            "FIX TOOL: Restart the network interface to fix connectivity issues. "
+            "Runs ipconfig /release + /renew on Windows. "
+            "Use when gateway is unreachable or packet loss is high. "
+            "Input: optional interface name, or empty string for auto-detect."
+        ),
+    },
+    {
+        "name": "switch_dns",
+        "func": switch_dns,
+        "description": (
+            "FIX TOOL: Switch DNS server to fix DNS resolution failures. "
+            "Use when DNS is failing or timing out. "
+            "Input: DNS server IP. Example: '8.8.8.8' (Google DNS) or '1.1.1.1' (Cloudflare)."
+        ),
+    },
+    {
+        "name": "block_device",
+        "func": block_device,
+        "description": (
+            "FIX TOOL: Block a suspicious device by MAC address using firewall rules. "
+            "Use when an unknown or unauthorized device is detected on the network. "
+            "Input: MAC address. Example: 'aa-bb-cc-dd-ee-ff'"
+        ),
+    },
+    {
+        "name": "terminate_clumsy",
+        "func": terminate_clumsy,
+        "description": (
+            "FIX TOOL: Terminate the Clumsy simulation process to restore packet loss back to 0%. "
+            "Use when high packet loss or network disruption is detected and Clumsy is running. "
+            "Input: not needed, pass empty string."
+        ),
+    },
     {
         "name": "read_logs",
         "func": read_network_logs,
