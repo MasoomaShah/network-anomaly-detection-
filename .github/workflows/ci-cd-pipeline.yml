@@ -290,14 +290,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Push clean snapshot to Hugging Face Space
+      - name: Install huggingface_hub
+        run: pip install --quiet huggingface_hub
+
+      - name: Upload to Hugging Face Space
         env:
           HF_TOKEN:      ${{ secrets.HF_TOKEN }}
           HF_USERNAME:   ${{ secrets.HF_USERNAME }}
           HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
+          GITHUB_SHA:    ${{ github.sha }}
         run: |
-          # Build a fresh git repo with no history so HF never sees large files
-          # from old commits. Only copy what the backend container actually needs.
+          # huggingface_hub handles binary files, LFS, and Xet storage automatically.
+          # We stage only what the backend container needs into /tmp/hf-deploy first.
           mkdir -p /tmp/hf-deploy
           rsync -a $GITHUB_WORKSPACE/ /tmp/hf-deploy/ \
             --exclude='.git' \
@@ -314,16 +318,21 @@ jobs:
             --exclude='.venv' \
             --exclude='venv'
 
-          cd /tmp/hf-deploy
-          git init -b main
-          git config user.email "ci@github.com"
-          git config user.name  "GitHub CI"
-          git add .
-          git commit -m "Deploy from GitHub $GITHUB_SHA"
-          git push \
-            https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME \
-            main --force
-          echo "✅ Deployed to → huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME"
+          python - <<'PYEOF'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          repo_id = f"{os.environ['HF_USERNAME']}/{os.environ['HF_SPACE_NAME']}"
+
+          api.upload_folder(
+              folder_path="/tmp/hf-deploy",
+              repo_id=repo_id,
+              repo_type="space",
+              commit_message=f"Deploy from GitHub {os.environ['GITHUB_SHA'][:8]}",
+          )
+          print(f"✅ Deployed to → huggingface.co/spaces/{repo_id}")
+          PYEOF
 
   # ═══════════════════════════════════════════════════════════════════════
   # STAGE 6b — DEPLOY FRONTEND → Vercel
