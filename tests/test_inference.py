@@ -102,9 +102,19 @@ class TestClassifyAnomalyType:
         assert result["anomaly_type"] == "high_jitter"
 
     def test_priority_order(self):
-        """Packet loss should take priority over DNS failure when both are present."""
+        """DNS failure should take priority over packet loss when both are present.
+        Root-cause classification: a broken DNS server causes apparent packet loss,
+        so dns_failure is the more specific and actionable diagnosis."""
         metrics = {"packet_loss_pct": 20.0, "latency_ms": 50, "download_mbps": 10,
                    "upload_mbps": 5, "dns_response_ms": 5000, "gateway_ping_ms": 5,
+                   "jitter_ms": 3, "connected_devices": 4}
+        result = classify_anomaly_type(metrics)
+        assert result["anomaly_type"] == "dns_failure"
+
+    def test_packet_loss_without_dns_failure(self):
+        """Packet loss is detected correctly when DNS is healthy."""
+        metrics = {"packet_loss_pct": 20.0, "latency_ms": 50, "download_mbps": 10,
+                   "upload_mbps": 5, "dns_response_ms": 30, "gateway_ping_ms": 5,
                    "jitter_ms": 3, "connected_devices": 4}
         result = classify_anomaly_type(metrics)
         assert result["anomaly_type"] == "high_packet_loss"
