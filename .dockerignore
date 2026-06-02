@@ -1,0 +1,41 @@
+# Frontend — not needed in backend container (deployed separately on Vercel)
+web/
+
+# Git history — not needed at runtime
+.git/
+.github/
+
+# Tests — not needed at runtime
+tests/
+
+# Large training / raw data files
+data/*.csv
+data/*.npy
+data/X_sequences.npy
+
+# Jupyter notebooks
+*.ipynb
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Secrets — never copy into image
+.env
+.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

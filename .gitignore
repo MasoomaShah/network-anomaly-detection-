@@ -1,16 +1,47 @@
-# data
-data/*.csv
-data/agent_log.json
+# ── Runtime data files (generated at runtime, never commit) ──────────
+data/alerts.json
 data/agent_state.json
+data/agent_log.json
 data/live_metrics.json
+data/inference.log
+data/agent.log
 
-# cache
+# ── Large training data ───────────────────────────────────────────────
+data/*.csv
+data/X_sequences.npy
+data/device_baseline.json
+
+# ── Python ────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-
-# env
+**/__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
 venv/
+env/
 .env
+.env.*
 
-# vscode optional
+# ── Node / Next.js (web/) ─────────────────────────────────────────────
+web/node_modules/
+web/.next/
+web/out/
+web/.env.local
+web/.env
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ───────────────────────────────────────────────────────────────
 .vscode/
+.idea/
+*.swp
+
+# ── Misc ──────────────────────────────────────────────────────────────
+package-lock.json
+*.log

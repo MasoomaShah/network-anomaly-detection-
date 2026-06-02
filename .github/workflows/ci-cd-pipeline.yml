@@ -2,12 +2,14 @@
 # CI/CD Pipeline — Agentic AI Network Troubleshooter
 # ════════════════════════════════════════════════════════════════════════
 # Stages:
-#   1. Code Quality  — lint, format, security scan
-#   2. Unit Tests    — test every module in isolation
-#   3. Model Check   — validate ML artifacts integrity
-#   4. Integration   — end-to-end pipeline smoke test
-#   5. Build Check   — Docker build + Next.js build verification
-#   6. Deploy        — HF Spaces (backend) + Vercel (frontend) on main push
+#   1. Code Quality   — flake8, black, isort, bandit
+#   2. Unit Tests     — pytest on ubuntu + windows
+#   3. Model Check    — validate ML artifacts
+#   4. Integration    — end-to-end pipeline smoke test
+#   5a. Docker Build  — backend image (with layer cache)
+#   5b. Frontend Build— Next.js npm build
+#   6a. Deploy Backend → Hugging Face Spaces (main only)
+#   6b. Deploy Frontend→ Vercel (main only)
 # ════════════════════════════════════════════════════════════════════════
 
 name: ML Pipeline CI/CD
@@ -30,7 +32,7 @@ concurrency:
 jobs:
 
   # ═══════════════════════════════════════════════════════════════════════
-  # STAGE 1: CODE QUALITY
+  # STAGE 1 — CODE QUALITY
   # ═══════════════════════════════════════════════════════════════════════
   code-quality:
     name: "🔍 Code Quality"
@@ -49,34 +51,41 @@ jobs:
           restore-keys: ${{ runner.os }}-pip-lint-
 
       - name: Install linting tools
-        run: pip install --upgrade pip && pip install flake8 black isort bandit safety
+        run: pip install --upgrade pip flake8 black isort bandit
 
-      - name: "Flake8 — Lint Check"
+      - name: "Flake8 — fatal errors only (blocking)"
         run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics \
+          flake8 . \
+            --count --select=E9,F63,F7,F82 \
+            --show-source --statistics \
             --exclude=.git,__pycache__,models,data,.github,venv,web
-          flake8 . --count --exit-zero --max-complexity=15 --max-line-length=120 \
-            --statistics --exclude=.git,__pycache__,models,data,.github,venv,web
 
-      - name: "Black — Format Check"
+      - name: "Flake8 — style warnings (non-blocking)"
+        run: |
+          flake8 . \
+            --count --exit-zero \
+            --max-complexity=15 --max-line-length=120 --statistics \
+            --exclude=.git,__pycache__,models,data,.github,venv,web
+
+      - name: "Black — format check (non-blocking)"
         run: |
           black --check --diff --line-length 120 \
             --exclude '/(\.git|__pycache__|models|data|venv|\.github|web)/' \
             . || echo "::warning::Run 'black .' to fix formatting"
 
-      - name: "isort — Import Order"
+      - name: "isort — import order (non-blocking)"
         run: |
           isort --check-only --diff --profile black \
             --skip-glob '*/models/*' --skip-glob '*/data/*' \
-            --skip-glob '*/venv/*' --skip-glob '*/web/*' \
+            --skip-glob '*/venv/*'  --skip-glob '*/web/*' \
             . || echo "::warning::Run 'isort .' to fix imports"
 
-      - name: "Bandit — Security Scan"
+      - name: "Bandit — security scan (non-blocking)"
         run: |
-          bandit -r agent/ collector/ inference/ dashboard/ -ll --format json \
-            --output bandit-report.json || true
-          bandit -r agent/ collector/ inference/ dashboard/ -ll --format txt \
-            || echo "::warning::Review bandit findings"
+          bandit -r agent/ collector/ inference/ dashboard/ \
+            -ll --format json --output bandit-report.json || true
+          bandit -r agent/ collector/ inference/ dashboard/ \
+            -ll --format txt || echo "::warning::Review bandit findings"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -86,7 +95,7 @@ jobs:
           retention-days: 30
 
   # ═══════════════════════════════════════════════════════════════════════
-  # STAGE 2: UNIT TESTS
+  # STAGE 2 — UNIT TESTS (ubuntu + windows matrix)
   # ═══════════════════════════════════════════════════════════════════════
   unit-tests:
     name: "🧪 Unit Tests (${{ matrix.os }})"
@@ -117,20 +126,23 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-timeout
 
-      - name: Create test data dirs
-        run: python -c "import os; os.makedirs('data', exist_ok=True); os.makedirs('models', exist_ok=True)"
+      - name: Create required directories
+        run: python -c "import os; [os.makedirs(d, exist_ok=True) for d in ['data','models']]"
 
       - name: Run unit tests
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key_for_ci' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY != '' && secrets.OPENAI_API_KEY || 'test_key_for_ci' }}
           LLM_PROVIDER: openai
         shell: bash
         run: |
-          pytest tests/ -v --timeout=60 --tb=short \
+          pytest tests/ -v \
+            --timeout=60 \
+            --tb=short \
             --junitxml=test-results.xml \
             --cov=agent --cov=collector --cov=inference \
             --cov-report=xml:coverage.xml \
-            --cov-report=term-missing -x
+            --cov-report=term-missing \
+            -x
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -142,7 +154,7 @@ jobs:
           retention-days: 30
 
   # ═══════════════════════════════════════════════════════════════════════
-  # STAGE 3: MODEL VALIDATION
+  # STAGE 3 — MODEL VALIDATION
   # ═══════════════════════════════════════════════════════════════════════
   model-validation:
     name: "🧠 Model Validation"
@@ -161,14 +173,14 @@ jobs:
           key: ${{ runner.os }}-pip-model-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-model-
 
-      - name: Install dependencies
-        run: pip install tensorflow numpy joblib scikit-learn pytest pytest-timeout
+      - name: Install ML deps
+        run: pip install --upgrade pip tensorflow numpy joblib scikit-learn pytest pytest-timeout
 
       - name: Run model validation
         run: pytest tests/test_model_validation.py -v --timeout=120 --tb=short -x
 
   # ═══════════════════════════════════════════════════════════════════════
-  # STAGE 4: INTEGRATION TESTS
+  # STAGE 4 — INTEGRATION TESTS
   # ═══════════════════════════════════════════════════════════════════════
   integration-tests:
     name: "🔗 Integration Tests"
@@ -192,60 +204,87 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt pytest pytest-timeout
 
-      - name: Create data dir
+      - name: Create data directory
         run: mkdir -p data
 
       - name: Run integration tests
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key_for_ci' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY != '' && secrets.OPENAI_API_KEY || 'test_key_for_ci' }}
           LLM_PROVIDER: openai
         run: pytest tests/test_integration.py -v --timeout=120 --tb=short -x
 
   # ═══════════════════════════════════════════════════════════════════════
-  # STAGE 5: BUILD CHECKS — Docker + Next.js
+  # STAGE 5a — DOCKER BUILD (backend)
+  # Runs in parallel with stage 5b after code-quality passes
   # ═══════════════════════════════════════════════════════════════════════
-  build-checks:
-    name: "🏗️ Build Checks"
+  build-docker:
+    name: "🐳 Docker Build"
     runs-on: ubuntu-latest
     needs: [code-quality]
     steps:
       - uses: actions/checkout@v4
 
-      # ── Docker ──────────────────────────────────────────────────────
-      - name: "Docker — Build backend image"
-        run: |
-          docker build \
-            --tag network-troubleshooter-backend:ci \
-            --file Dockerfile \
-            --progress plain \
-            .
+      # Docker layer cache — avoids reinstalling TensorFlow on every run
+      - uses: docker/setup-buildx-action@v3
 
-      # ── Next.js ─────────────────────────────────────────────────────
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile','requirements.txt') }}
+          restore-keys: ${{ runner.os }}-buildx-
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          tags: network-troubleshooter-backend:ci
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      # Rotate cache (prevents unbounded growth)
+      - name: Rotate build cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 5b — NEXT.JS BUILD (frontend)
+  # Runs in parallel with stage 5a
+  # ═══════════════════════════════════════════════════════════════════════
+  build-frontend:
+    name: "⚡ Next.js Build"
+    runs-on: ubuntu-latest
+    needs: [code-quality]
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: "Next.js — Install"
+      - name: Install dependencies
         working-directory: web
         run: npm ci
 
-      - name: "Next.js — Build"
+      - name: Build Next.js app
         working-directory: web
         env:
-          NEXT_PUBLIC_API_URL: https://placeholder.example.com
+          # Placeholder so the build doesn't fail on missing env var
+          NEXT_PUBLIC_API_URL: https://placeholder.hf.space
         run: npm run build
 
   # ═══════════════════════════════════════════════════════════════════════
-  # STAGE 6: DEPLOY (main push only)
+  # STAGE 6a — DEPLOY BACKEND → Hugging Face Spaces
+  # Only on push to main, after all tests + builds pass
   # ═══════════════════════════════════════════════════════════════════════
-
-  # ── Backend → Hugging Face Spaces ───────────────────────────────────
   deploy-backend:
-    name: "🚀 Deploy Backend → HF Spaces"
+    name: "🚀 Deploy → HF Spaces"
     runs-on: ubuntu-latest
-    needs: [integration-tests, build-checks]
+    needs: [integration-tests, build-docker, build-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
@@ -264,13 +303,15 @@ jobs:
           git push \
             https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME \
             HEAD:main --force
-          echo "✅ Deployed to HF Space → $HF_USERNAME/$HF_SPACE_NAME"
+          echo "✅ Pushed to → huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME"
 
-  # ── Frontend → Vercel ───────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════
+  # STAGE 6b — DEPLOY FRONTEND → Vercel
+  # ═══════════════════════════════════════════════════════════════════════
   deploy-frontend:
-    name: "🚀 Deploy Frontend → Vercel"
+    name: "🚀 Deploy → Vercel"
     runs-on: ubuntu-latest
-    needs: [integration-tests, build-checks]
+    needs: [integration-tests, build-docker, build-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
@@ -297,24 +338,25 @@ jobs:
           vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
 
   # ═══════════════════════════════════════════════════════════════════════
-  # PIPELINE REPORT
+  # PIPELINE REPORT — always runs, summarises all stages
   # ═══════════════════════════════════════════════════════════════════════
   pipeline-report:
     name: "📊 Pipeline Report"
     runs-on: ubuntu-latest
-    needs: [code-quality, unit-tests, model-validation, integration-tests, build-checks]
+    needs: [code-quality, unit-tests, model-validation, integration-tests, build-docker, build-frontend]
     if: always()
     steps:
-      - name: Summary
+      - name: Write summary
         run: |
           echo "## 📊 Pipeline Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Code Quality     | ${{ needs.code-quality.result     == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 Unit Tests       | ${{ needs.unit-tests.result       == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧠 Model Validation | ${{ needs.model-validation.result  == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔗 Integration      | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏗️ Build Checks     | ${{ needs.build-checks.result     == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Code Quality    | ${{ needs.code-quality.result    == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests      | ${{ needs.unit-tests.result      == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧠 Model Validation| ${{ needs.model-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Integration     | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Docker Build    | ${{ needs.build-docker.result    == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Frontend Build  | ${{ needs.build-frontend.result  == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** \`${{ github.sha }}\` | **Branch:** \`${{ github.ref_name }}\` | **Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
