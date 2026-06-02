@@ -15,9 +15,9 @@ langchain-community
 langchain-openai
 python-dotenv
 
-# ── Dashboard ────────────────────────────────────────────
-streamlit
-streamlit-autorefresh
+# ── Dashboard API ────────────────────────────────────
+fastapi
+uvicorn[standard]
 
 # ── Network Tools ────────────────────────────────────────
 python-nmap

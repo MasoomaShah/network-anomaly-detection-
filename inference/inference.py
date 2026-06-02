@@ -26,6 +26,12 @@ Directory layout expected:
 
 import os
 import sys
+
+# Optimize TensorFlow startup time by skipping GPU driver scans and silencing verbose output
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
 import time
 import json
 import logging
@@ -220,16 +226,19 @@ def classify_anomaly_type(raw_metrics):
         dl_threshold = float(os.environ.get("BANDWIDTH_DL_THRESHOLD", 80.0))
         ul_threshold = float(os.environ.get("BANDWIDTH_UL_THRESHOLD", 40.0))
 
-    # Priority order — first match wins
-    if loss > 5:
-        anomaly_type = "high_packet_loss"
-        severity     = "high" if loss > 15 else "medium"
+    # Priority order — specific infrastructure failures before generic quality issues.
+    # DNS and gateway are checked FIRST because packet_loss can be a symptom of
+    # those failures (e.g. retry traffic), not the root cause.
+    if dns >= 1000:
+        # DNS is clearly broken regardless of packet loss
+        anomaly_type = "dns_failure"
+        severity     = "high"
     elif gw > 300 or gw >= 999:
         anomaly_type = "gateway_unreachable"
         severity     = "high" if gw > 500 else "medium"
-    elif dns >= 1000:
-        anomaly_type = "dns_failure"
-        severity     = "high"
+    elif loss > 5:
+        anomaly_type = "high_packet_loss"
+        severity     = "high" if loss > 15 else "medium"
     elif dl > dl_threshold or ul > ul_threshold:
         anomaly_type = "bandwidth_saturation"
         severity     = "medium"

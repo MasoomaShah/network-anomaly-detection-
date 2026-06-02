@@ -7,6 +7,15 @@ sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "collector"))
 
 class TestMetrics:
+    @pytest.fixture(autouse=True)
+    def mock_metrics(self, monkeypatch):
+        import metrics
+        monkeypatch.setattr(metrics, "get_latency_loss_jitter", lambda: (25.0, 0.0, 2.0))
+        monkeypatch.setattr(metrics, "get_bandwidth", lambda: (50.0, 10.0))
+        monkeypatch.setattr(metrics, "get_dns_response", lambda: 15.0)
+        monkeypatch.setattr(metrics, "get_gateway_ping", lambda: 5.0)
+        monkeypatch.setattr(metrics, "get_connected_devices", lambda: 5)
+
     def test_get_all_metrics_returns_dict(self):
         from metrics import get_all_metrics
         result = get_all_metrics()
