@@ -4,10 +4,10 @@ import time
 import os
 import psutil
 import numpy as np 
-GATEWAY = "192.168.1.1"     
-NETWORK = "192.168.1.0/24"   
-PING_HOST = "8.8.8.8"
-DNS_TEST_DOMAIN = "google.com"
+GATEWAY         = os.getenv("GATEWAY",         "192.168.1.1")
+NETWORK         = os.getenv("NETWORK",         "192.168.1.0/24")
+PING_HOST       = os.getenv("PING_HOST",       "8.8.8.8")
+DNS_TEST_DOMAIN = os.getenv("DNS_TEST_DOMAIN", "google.com")
 
 # ── Ensure nmap is discoverable ──────────────────────────────────────────────
 NMAP_DIR = r"C:\Program Files (x86)\Nmap"
