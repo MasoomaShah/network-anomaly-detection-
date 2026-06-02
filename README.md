@@ -224,7 +224,7 @@ The CI/CD pipeline runs on every push:
 
 ## 👥 Team
 
-Built as a final-year project demonstrating agentic AI applied to real-world network operations.
+A project demonstrating agentic AI applied to real-world network operations.
 
 ---
 
