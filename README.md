@@ -1,261 +1,235 @@
-# Network Troubleshooter — Agentic AI
+---
+title: Network Troubleshooter
+emoji: 🌐
+colorFrom: green
+colorTo: teal
+sdk: docker
+app_port: 7860
+pinned: false
+---
 
-> Real-time network anomaly detection powered by an LSTM Autoencoder, with autonomous remediation driven by a LangChain AI agent.
+<div align="center">
 
-**🌐 Live Demo → [networktroubleshooter.vercel.app](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/)**
+# 🌐 Network Troubleshooter — Agentic AI
+
+**Real-time network anomaly detection powered by LSTM autoencoders and autonomous LangChain agents**
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/)
+[![Backend](https://img.shields.io/badge/Backend-HuggingFace%20Spaces-yellow?style=for-the-badge&logo=huggingface)](https://huggingface.co/spaces/mominazahid/networkagentic)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?style=for-the-badge&logo=githubactions)](https://github.com/MasoomaShah/network-anomaly-detection-/actions)
+[![Python](https://img.shields.io/badge/Python-3.11-green?style=for-the-badge&logo=python)](https://python.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+
+</div>
 
 ---
 
-## Overview
+## 🔍 What It Does
 
-Network Troubleshooter continuously monitors 8 network metrics, uses a trained LSTM Autoencoder to detect anomalies through reconstruction error, and dispatches an LLM-powered agent to investigate and remediate issues — all in real time.
-
-The system separates concerns cleanly:
-
-- **The LSTM decides *if* there is an anomaly** — via reconstruction error vs adaptive threshold
-- **The rule-based classifier decides *what kind*** — DNS failure, packet loss, bandwidth saturation, etc.
-- **The LangChain agent decides *what to do*** — investigates with tools, proposes fixes, logs a diagnosis
-
----
-
-## Architecture
+Network Troubleshooter continuously monitors live network metrics, detects anomalies using a trained LSTM Autoencoder, and dispatches an autonomous AI agent to diagnose and attempt remediation — all in real time.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Next.js Dashboard                       │
-│          (Live Metrics · Agent Reasoning · Anomaly Feed)     │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ REST API (FastAPI)
-┌───────────────────────▼─────────────────────────────────────┐
-│                     FastAPI Backend                          │
-│                                                              │
-│  ┌─────────────────────┐    ┌──────────────────────────┐    │
-│  │   LSTM Inference     │    │    LangChain Agent        │    │
-│  │                      │    │                           │    │
-│  │  Collector (8 metrics│    │  • Investigates alerts    │    │
-│  │  every 3 seconds)    │───▶│  • Runs diagnostic tools  │    │
-│  │                      │    │  • Generates diagnosis    │    │
-│  │  LSTM Autoencoder    │    │  • Logs remediation steps │    │
-│  │  Reconstruction Error│    │                           │    │
-│  │  Adaptive Threshold  │    │  LLM: OpenAI / Groq /     │    │
-│  └─────────────────────┘    │       Ollama               │    │
-│                              └──────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+Live Metrics → LSTM Autoencoder → Anomaly Detected → LangChain Agent → Diagnosis + Fix
+     ↑               ↑                   ↑                   ↑                ↑
+  collector      TensorFlow         Rule-based          OpenAI /          Dashboard
+  (8 features)   inference          classifier           Groq LLM          (Next.js)
 ```
 
 ---
 
-## Features
+## ✨ Features
 
-### 🔍 LSTM Anomaly Detection
-- Trained LSTM Autoencoder on 8 network features
-- Adaptive threshold calibration (mean + 4σ) — adjusts to your network baseline automatically
-- 60-sample rolling window (3 min of history) for accurate reconstruction
-- Rule-based classifier labels anomaly type: `dns_failure`, `high_packet_loss`, `gateway_unreachable`, `bandwidth_saturation`, `high_latency`, `high_jitter`
+| Feature | Description |
+|---|---|
+| 🧠 **LSTM Anomaly Detection** | Autoencoder trained on real network data detects anomalies via reconstruction error |
+| 🤖 **Autonomous Agent** | LangChain + LangGraph agent investigates and attempts automated fixes |
+| 📊 **Live Dashboard** | Real-time Next.js dashboard with KPI cards, sparklines, agent reasoning panel, and log streams |
+| 🌐 **3D Globe** | Interactive Three.js globe visualizing network arcs in the background |
+| 🎭 **Demo Scenarios** | Inject real anomalies: bandwidth flood, DNS failure, packet loss, unknown device |
+| 🔧 **Manual Trigger Guides** | Copy-paste commands for each scenario (Clumsy, PowerShell, netsh) |
+| 📡 **Multi-LLM Support** | Swap between OpenAI, Groq (free), or Ollama via `.env` |
+| 🐳 **Dockerized** | Full Docker deployment to Hugging Face Spaces |
+| ⚙️ **CI/CD Pipeline** | GitHub Actions: lint → test → model validation → Docker build → deploy |
 
-### 🤖 Autonomous AI Agent
-- LangChain agent with diagnostic tools: ping, DNS lookup, speed test, port scan, traceroute
-- Investigates each anomaly, reasons through likely causes, proposes remediation
-- Full step-by-step reasoning visible in the dashboard in real time
-- Supports OpenAI, Groq (free), or local Ollama models
+---
 
-### 📊 Real-Time Dashboard
-- Live KPI cards: Latency, Packet Loss, Download, Upload, Devices, DNS, Gateway, Jitter
-- Agent Reasoning panel — see every thought, action, and observation
-- Anomaly Feed with severity classification
-- Action Log with session history
-- Log Streams (Inference + Agent output, live)
+## 🏗️ Architecture
 
-### 🎭 Demo Scenarios
-Inject realistic anomalies with one click — or trigger them manually:
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Next.js Frontend                      │
+│         (Vercel) — Real-time dashboard + 3D globe        │
+└──────────────────────────┬──────────────────────────────┘
+                           │ REST API (SWR polling)
+┌──────────────────────────▼──────────────────────────────┐
+│                  FastAPI Backend                          │
+│              (Hugging Face Spaces)                       │
+│                                                          │
+│  ┌─────────────────┐    ┌──────────────────────────┐    │
+│  │ LSTM Inference  │    │    LangChain Agent        │    │
+│  │                 │    │                           │    │
+│  │ • 8 features    │───▶│ • OpenAI / Groq LLM      │    │
+│  │ • Autoencoder   │    │ • Network tools           │    │
+│  │ • Adaptive thr  │    │ • Autonomous remediation  │    │
+│  └────────┬────────┘    └──────────────────────────┘    │
+│           │                                              │
+│  ┌────────▼────────────────────────┐                    │
+│  │        Metric Collector         │                    │
+│  │  ping · nmap · psutil · socket  │                    │
+│  └─────────────────────────────────┘                    │
+└─────────────────────────────────────────────────────────┘
+```
 
-| Scenario | Demo Button | Real Trigger |
+---
+
+## 📈 Detected Anomaly Types
+
+| Anomaly | Detection Method | Trigger |
 |---|---|---|
-| Bandwidth Flood | ✅ | `curl.exe -o NUL https://speed.hetzner.de/10GB.bin` |
-| Packet Loss | ✅ | Clumsy tool — outbound drop 70% |
-| DNS Failure | ✅ | Set DNS to dead server + `net stop dnscache` |
-| Unknown Device | ✅ | Connect new device / `arp -s` |
+| `gateway_unreachable` | LSTM + gateway ping > 300ms | Router down / network loss |
+| `dns_failure` | LSTM + DNS response > 1000ms | DNS server unreachable |
+| `high_packet_loss` | LSTM + packet loss > 5% | Network congestion |
+| `bandwidth_saturation` | LSTM + throughput spike | Large downloads / floods |
+| `high_latency` | LSTM + latency > 150ms | Network congestion |
+| `high_jitter` | LSTM + jitter > 80ms | Unstable connection |
+| `unknown_device` | LSTM + device count change | New device on network |
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind v4 |
-| **3D Visualization** | Three.js, React Three Fiber — animated globe with network arcs |
-| **Backend API** | FastAPI, Uvicorn |
-| **ML Model** | TensorFlow / Keras — LSTM Autoencoder |
-| **AI Agent** | LangChain, LangGraph |
-| **LLM** | OpenAI GPT-4.1 / Groq Llama / Ollama |
-| **Data Polling** | SWR (stale-while-revalidate) |
-| **Charts** | Recharts |
-| **Deployment** | Vercel (frontend) + Hugging Face Spaces Docker (backend) |
-| **CI/CD** | GitHub Actions — lint, test, model validation, Docker build, auto-deploy |
-
----
-
-## Monitored Metrics
-
-| Metric | Method |
-|---|---|
-| `latency_ms` | ICMP ping to 8.8.8.8 |
-| `packet_loss_pct` | Ping batch (4 packets) |
-| `download_mbps` | psutil byte counter (1s window) |
-| `upload_mbps` | psutil byte counter (1s window) |
-| `connected_devices` | nmap subnet scan / ARP table |
-| `dns_response_ms` | `socket.gethostbyname("google.com")` |
-| `gateway_ping_ms` | ICMP ping to default gateway |
-| `jitter_ms` | Std deviation of ping RTTs |
-
----
-
-## Getting Started (Local)
+## 🚀 Quick Start (Local)
 
 ### Prerequisites
 - Python 3.11+
 - Node.js 20+
-- nmap installed (`choco install nmap` on Windows)
+- OpenAI API key (or Groq — free)
 
-### 1 — Clone & configure
+### 1. Clone & configure
 
 ```bash
 git clone https://github.com/MasoomaShah/network-anomaly-detection-.git
 cd network-anomaly-detection-
-```
-
-Copy the env template and add your API key:
-
-```bash
 cp .env.example .env
-# Edit .env — set OPENAI_API_KEY and LLM_PROVIDER
+# Edit .env — add your OPENAI_API_KEY
 ```
 
-### 2 — Install Python deps
+### 2. Start the backend
 
 ```bash
 pip install -r requirements.txt
-```
-
-### 3 — Install frontend deps
-
-```bash
-cd web && npm install && cd ..
-```
-
-### 4 — Run both servers
-
-**Terminal 1 — Backend (FastAPI + LSTM + Agent):**
-```bash
 python -m uvicorn dashboard.server:app --host 0.0.0.0 --port 8001 --reload --reload-dir dashboard --reload-dir agent
 ```
 
-**Terminal 2 — Frontend (Next.js):**
+### 3. Start the frontend
+
 ```bash
-cd web && npm run dev
+cd web
+npm install
+npm run dev
 ```
 
 Open **http://localhost:3000**
 
-Or use the Makefile shortcut:
-```bash
-make dev
-```
+---
+
+## 🎭 Demo Scenarios
+
+Click the **⌘** icon next to each scenario in the sidebar for real trigger commands, or use the inject button to simulate instantly:
+
+| Scenario | What It Simulates |
+|---|---|
+| **Bandwidth Flood** | Saturate bandwidth with a 10 GB download |
+| **DNS Failure** | Point DNS to a dead server via `netsh` |
+| **Packet Loss** | Use Clumsy tool — 70% outbound drop |
+| **Unknown Device** | New MAC address appears on network |
 
 ---
 
-## Environment Variables
+## 🛠️ Tech Stack
 
-### Backend (`.env`)
+**Backend**
+- Python 3.11 · FastAPI · TensorFlow/Keras · LangChain · LangGraph
+- LSTM Autoencoder (trained on real network data)
+- psutil · python-nmap · socket (metric collection)
 
-```env
-LLM_PROVIDER=openai          # openai | groq | ollama
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4.1
+**Frontend**
+- Next.js 16 (App Router) · React 19 · TypeScript
+- Tailwind CSS v4 · Three.js · @react-three/fiber
+- Recharts · Lucide React · SWR
 
-# Free alternative — Groq
-# LLM_PROVIDER=groq
-# GROQ_API_KEY=gsk_...
-# GROQ_MODEL=llama-3.3-70b-versatile
-
-GATEWAY=192.168.1.1          # your router IP
-NETWORK=192.168.1.0/24
-PING_HOST=8.8.8.8
-ALLOWED_ORIGINS=http://localhost:3000
-```
-
-### Frontend (`web/.env.local`)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8001
-```
+**Infrastructure**
+- 🐳 Docker · Hugging Face Spaces (backend)
+- ▲ Vercel (frontend)
+- ⚙️ GitHub Actions CI/CD (lint → test → model validation → build → deploy)
 
 ---
 
-## Project Structure
+## 📦 Project Structure
 
 ```
 network-anomaly-detection-/
-├── agent/                  # LangChain agent, tools, memory, config
-│   ├── agent.py            # Agent runner + fallback diagnosis
-│   ├── tools.py            # Diagnostic tools (ping, DNS, speed test...)
-│   ├── trigger.py          # LSTM watcher + demo injector
-│   ├── memory.py           # State persistence (JSON files)
-│   └── config.py           # LLM provider factory
-├── collector/
-│   └── metrics.py          # 8-metric network collector
-├── inference/
-│   └── inference.py        # LSTM inference + rule-based classifier
-├── dashboard/
-│   ├── server.py           # FastAPI REST API
-│   └── process_manager.py  # Subprocess manager for inference + agent
-├── models/
-│   ├── lstm_autoencoder.h5 # Trained model
-│   ├── scaler.pkl          # StandardScaler from training
-│   └── threshold.npy       # Baseline reconstruction threshold
-├── web/                    # Next.js frontend
-│   ├── app/                # App Router pages + global CSS
-│   ├── components/         # UI components
-│   │   ├── three/          # 3D globe (Three.js)
-│   │   ├── metrics/        # KPI cards + sparklines
-│   │   ├── agent/          # Reasoning panel + step cards
-│   │   ├── feed/           # Anomaly feed + action log
-│   │   └── layout/         # Sidebar + top bar
-│   └── lib/                # SWR hooks, API client, types
-├── tests/                  # pytest test suite
-├── Dockerfile              # Backend container for HF Spaces
-├── Makefile                # Dev shortcuts
-└── .github/workflows/      # CI/CD pipeline
+├── agent/              # LangChain agent, tools, memory, prompts
+├── collector/          # Network metric collection (ping, DNS, bandwidth)
+├── dashboard/          # FastAPI server + process manager
+├── inference/          # LSTM inference + rule-based classifier
+├── models/             # Trained model artifacts (.h5, scaler, threshold)
+├── tests/              # Unit + integration tests
+├── web/                # Next.js frontend dashboard
+│   ├── app/            # App Router pages + globals.css
+│   ├── components/     # UI components (KPI, globe, feeds, sidebar)
+│   └── lib/            # API client, SWR hooks, types
+├── Dockerfile          # Backend container (HF Spaces)
+├── main.py             # Entry point
+└── .github/workflows/  # CI/CD pipeline
 ```
 
 ---
 
-## CI/CD Pipeline
+## ⚙️ Environment Variables
 
-GitHub Actions runs on every push to `main`:
+### Backend (`.env` or HF Spaces secrets)
 
-```
-Code Quality → Unit Tests (Ubuntu + Windows) → Model Validation
-                     ↓
-              Integration Tests
-                     ↓
-         Docker Build ←→ Next.js Build  (parallel)
-                     ↓
-    Deploy Backend         Deploy Frontend
-    (HF Spaces)            (Vercel)
-```
+| Variable | Description | Default |
+|---|---|---|
+| `LLM_PROVIDER` | `openai` / `groq` / `ollama` | `openai` |
+| `OPENAI_API_KEY` | OpenAI API key | — |
+| `OPENAI_MODEL` | Model name | `gpt-4.1` |
+| `GROQ_API_KEY` | Groq API key (free alternative) | — |
+| `GATEWAY` | Router / host IP to ping | `192.168.1.1` |
+| `PING_HOST` | Public host for latency check | `8.8.8.8` |
+| `ALLOWED_ORIGINS` | CORS — your frontend URL | `http://localhost:3000` |
 
----
+### Frontend (Vercel environment variables)
 
-## Deployment
-
-| Service | URL |
+| Variable | Description |
 |---|---|
-| Frontend | [networktroubleshooter.vercel.app](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/) |
-| Backend API | [mominazahid-networkagentic.hf.space](https://mominazahid-networkagentic.hf.space/api/status) |
+| `NEXT_PUBLIC_API_URL` | Backend URL (HF Spaces) |
 
 ---
 
-## License
+## 🧪 Running Tests
 
-MIT
+```bash
+pytest tests/ -v --timeout=60
+```
+
+The CI/CD pipeline runs on every push:
+1. 🔍 Code quality (flake8, black, bandit)
+2. 🧪 Unit tests (Ubuntu + Windows)
+3. 🧠 Model validation
+4. 🔗 Integration tests
+5. 🏗️ Docker + Next.js build check
+6. 🚀 Deploy → HF Spaces + Vercel
+
+---
+
+## 👥 Team
+
+Built as a final-year project demonstrating agentic AI applied to real-world network operations.
+
+---
+
+<div align="center">
+
+**[🌐 Live Demo](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/) · [🤗 HF Space](https://huggingface.co/spaces/mominazahid/networkagentic) · [📁 GitHub](https://github.com/MasoomaShah/network-anomaly-detection-)**
+
+</div>
