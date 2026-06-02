@@ -1,27 +1,32 @@
 # ── Backend Dockerfile ────────────────────────────────────────────────
-# Runs FastAPI + LSTM inference + LangChain agent on port 8001
-# Deploy to: Railway, Render, or Hugging Face Spaces (Docker)
+# Hugging Face Spaces (Docker) — port 7860, non-root user required
+# Also works on Railway / Render (PORT env var overrides 7860)
 # ─────────────────────────────────────────────────────────────────────
 
 FROM python:3.11-slim
 
-# System deps: ping (for metrics), nmap (device scan), curl (healthcheck)
+# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
         iputils-ping \
         nmap \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
+# HF Spaces requires a non-root user with uid 1000
+RUN useradd -m -u 1000 user
+USER user
+ENV PATH="/home/user/.local/bin:$PATH"
+
 WORKDIR /app
 
-# Install Python deps first (layer cache)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python deps (as user, into ~/.local)
+COPY --chown=user requirements.txt .
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # Copy source
-COPY . .
+COPY --chown=user . .
 
-# Create data dir (process_manager writes logs/json here at runtime)
+# Create data dir with empty default files
 RUN mkdir -p data && \
     echo "[]" > data/alerts.json && \
     echo "{}" > data/agent_state.json && \
@@ -30,12 +35,7 @@ RUN mkdir -p data && \
     touch data/inference.log && \
     touch data/agent.log
 
-# Expose API port
-# HF Spaces uses PORT=7860 by default; Railway/Render use 8001.
-# The shell form lets us read $PORT at runtime.
 EXPOSE 7860
 
-# Allow ping without root (needed for metrics collection)
-RUN setcap cap_net_raw+ep /bin/ping 2>/dev/null || true
-
+# PORT env var is injected by HF Spaces (7860) / Railway / Render
 CMD uvicorn dashboard.server:app --host 0.0.0.0 --port ${PORT:-7860} --workers 1
