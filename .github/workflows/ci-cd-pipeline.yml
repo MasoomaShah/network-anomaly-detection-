@@ -315,7 +315,7 @@ jobs:
             --exclude='venv'
 
           cd /tmp/hf-deploy
-          git init
+          git init -b main
           git config user.email "ci@github.com"
           git config user.name  "GitHub CI"
           git add .
