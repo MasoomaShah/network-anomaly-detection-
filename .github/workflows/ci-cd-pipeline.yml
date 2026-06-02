@@ -289,21 +289,41 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Push to Hugging Face Space
+      - name: Push clean snapshot to Hugging Face Space
         env:
           HF_TOKEN:      ${{ secrets.HF_TOKEN }}
           HF_USERNAME:   ${{ secrets.HF_USERNAME }}
           HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
         run: |
+          # Build a fresh git repo with no history so HF never sees large files
+          # from old commits. Only copy what the backend container actually needs.
+          mkdir -p /tmp/hf-deploy
+          rsync -a $GITHUB_WORKSPACE/ /tmp/hf-deploy/ \
+            --exclude='.git' \
+            --exclude='web/' \
+            --exclude='data/*.npy' \
+            --exclude='data/*.csv' \
+            --exclude='data/*.log' \
+            --exclude='data/alerts.json' \
+            --exclude='data/agent_state.json' \
+            --exclude='data/agent_log.json' \
+            --exclude='data/live_metrics.json' \
+            --exclude='*.ipynb' \
+            --exclude='__pycache__' \
+            --exclude='.venv' \
+            --exclude='venv'
+
+          cd /tmp/hf-deploy
+          git init
           git config user.email "ci@github.com"
           git config user.name  "GitHub CI"
+          git add .
+          git commit -m "Deploy from GitHub $GITHUB_SHA"
           git push \
             https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME \
-            HEAD:main --force
-          echo "✅ Pushed to → huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME"
+            main --force
+          echo "✅ Deployed to → huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME"
 
   # ═══════════════════════════════════════════════════════════════════════
   # STAGE 6b — DEPLOY FRONTEND → Vercel
