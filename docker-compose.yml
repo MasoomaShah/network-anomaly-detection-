@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+
+  # ── Backend: FastAPI + LSTM inference + LangChain agent ──────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4.1}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - GATEWAY=${GATEWAY:-192.168.1.1}
+      - NETWORK=${NETWORK:-192.168.1.0/24}
+      - PING_HOST=${PING_HOST:-8.8.8.8}
+      - ALLOWED_ORIGINS=http://localhost:3000
+    volumes:
+      # Mount data dir so logs persist between restarts
+      - ./data:/app/data
+    network_mode: host   # gives access to the real local network for ping/nmap
+    restart: unless-stopped
+
+  # ── Frontend: Next.js dashboard ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8001
+    depends_on:
+      - backend
+    restart: unless-stopped
