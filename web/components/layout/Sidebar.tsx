@@ -33,23 +33,36 @@ interface CmdStep {
 
 const MANUAL_TRIGGERS: Record<string, { title: string; steps: CmdStep[] }> = {
   bandwidth_flood: {
-    title: 'Real Bandwidth Saturation',
+    title: 'Real Bandwidth Saturation (Local Only)',
     steps: [
       {
-        label: 'Download 10 GB file (PowerShell)',
-        cmd: 'curl.exe -o NUL https://speed.hetzner.de/10GB.bin',
+        label: '⚠️ Only works when backend runs locally',
+        note: 'On the live demo, use the inject button instead',
+      },
+      {
+        label: 'Download large file — option 1',
+        cmd: 'curl.exe -o NUL http://speedtest.tele2.net/10GB.zip',
         note: 'Stop with Ctrl + C',
       },
       {
-        label: 'Parallel downloads (floods harder)',
-        cmd: '1..4 | ForEach-Object -Parallel { curl.exe -o NUL https://speed.hetzner.de/10GB.bin }',
-        note: 'PowerShell 7+ required',
+        label: 'Download large file — option 2 (if above fails)',
+        cmd: 'curl.exe -o NUL http://proof.ovh.net/files/10Gb.dat',
+        note: 'Stop with Ctrl + C',
+      },
+      {
+        label: 'Run 3 parallel downloads (Windows PowerShell 5+)',
+        cmd: 'Start-Job { curl.exe -o NUL http://speedtest.tele2.net/10GB.zip } ; Start-Job { curl.exe -o NUL http://speedtest.tele2.net/10GB.zip } ; Start-Job { curl.exe -o NUL http://speedtest.tele2.net/10GB.zip }',
+        note: 'Stop all with: Get-Job | Stop-Job',
       },
     ],
   },
   packet_loss: {
-    title: 'Real Packet Loss via Clumsy',
+    title: 'Real Packet Loss via Clumsy (Local Only)',
     steps: [
+      {
+        label: '⚠️ Only works when backend runs locally',
+        note: 'On the live demo, use the inject button instead',
+      },
       {
         label: 'Download Clumsy (Windows)',
         note: 'https://jagt.me/clumsy/',
@@ -74,8 +87,12 @@ const MANUAL_TRIGGERS: Record<string, { title: string; steps: CmdStep[] }> = {
     ],
   },
   dns_failure: {
-    title: 'Real DNS Failure',
+    title: 'Real DNS Failure (Local Only)',
     steps: [
+      {
+        label: '⚠️ Only works when backend runs locally',
+        note: 'On the live demo, use the inject button instead',
+      },
       {
         label: '① Get your adapter name (run first)',
         cmd: 'Get-NetAdapter | Where-Object {$_.Status -eq "Up"} | Select-Object -ExpandProperty Name',
@@ -103,8 +120,12 @@ const MANUAL_TRIGGERS: Record<string, { title: string; steps: CmdStep[] }> = {
     ],
   },
   unknown_device: {
-    title: 'Real Unknown Device',
+    title: 'Real Unknown Device (Local Only)',
     steps: [
+      {
+        label: '⚠️ Only works when backend runs locally',
+        note: 'On the live demo, use the inject button instead',
+      },
       {
         label: 'Connect any new device to your Wi-Fi',
         note: 'Phone hotspot, guest device, VM, etc.',
