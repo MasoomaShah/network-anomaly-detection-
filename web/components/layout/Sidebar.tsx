@@ -419,6 +419,14 @@ export default function Sidebar() {
 
       {demoOpen && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{
+            fontSize: '10px',
+            color: 'var(--caribbean)',
+            padding: '4px 4px 2px',
+            opacity: 0.8,
+          }}>
+            ↓ Click to inject — works for everyone
+          </div>
           {DEMO_SCENARIOS.map(({ key, label }) => (
             <div key={key}>
               {/* Demo inject button + trigger toggle */}
@@ -438,7 +446,7 @@ export default function Sidebar() {
                 {/* Toggle real-trigger panel */}
                 <button
                   onClick={() => toggleTrigger(key)}
-                  title="Show manual trigger commands"
+                  title="Manual trigger commands (local dev only)"
                   style={{
                     flexShrink: 0,
                     width: 28,
