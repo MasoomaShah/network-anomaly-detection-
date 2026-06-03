@@ -1,3 +1,11 @@
+"""
+metrics.py — Network Metric Collector
+======================================
+Uses TCP socket probes instead of ICMP ping so it works in restricted
+Docker environments (HF Spaces, containers without CAP_NET_RAW).
+Falls back to subprocess ping on Windows where TCP probing may differ.
+"""
+
 import subprocess
 import socket
 import time
@@ -13,77 +21,65 @@ DNS_TEST_DOMAIN = os.getenv("DNS_TEST_DOMAIN", "google.com")
 
 IS_WINDOWS = platform.system() == "Windows"
 
-# ── Ensure nmap is discoverable on Windows ───────────────────────────────────
+# Ports to try for TCP RTT probe — first reachable one wins
+_PROBE_PORTS = [53, 443, 80, 8080]
+
+# ── Ensure nmap is discoverable on Windows ────────────────────────────────────
 NMAP_DIR = r"C:\Program Files (x86)\Nmap"
 if IS_WINDOWS and os.path.isdir(NMAP_DIR) and NMAP_DIR not in os.environ.get("PATH", ""):
     os.environ["PATH"] = NMAP_DIR + os.pathsep + os.environ.get("PATH", "")
 
 
-def _ping_cmd(host: str, count: int = 4) -> list:
-    """Return the correct ping command for the current OS."""
-    if IS_WINDOWS:
-        # -n count  -w timeout_ms
-        return ["ping", "-n", str(count), "-w", "1000", host]
-    else:
-        # -c count  -W timeout_s  -i interval_s
-        return ["ping", "-c", str(count), "-W", "2", "-i", "0.5", host]
+# ── TCP RTT probe (no root required) ─────────────────────────────────────────
+
+def _tcp_rtt(host: str, timeout: float = 2.0) -> float | None:
+    """
+    Measure round-trip time to *host* via TCP connect on common ports.
+    Returns RTT in ms, or None if all ports are unreachable.
+    Connection-refused (errno 111/10061) still counts — host is alive.
+    """
+    for port in _PROBE_PORTS:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            t0 = time.time()
+            err = sock.connect_ex((host, port))
+            rtt = (time.time() - t0) * 1000
+            sock.close()
+            # 0 = connected, 111 = refused (Linux), 10061 = refused (Windows)
+            if err in (0, 111, 10061):
+                return round(rtt, 2)
+        except Exception:
+            continue
+    return None
 
 
-def _parse_ping_output(output: str):
-    """Parse ping stdout from both Windows and Linux into (times, loss_pct)."""
-    times = []
-    loss = 0.0
+# ── Public API ────────────────────────────────────────────────────────────────
 
-    for line in output.split("\n"):
-        # Both platforms emit "time=X" (Windows: "time=Xms", Linux: "time=X ms")
-        if "time=" in line or "time<" in line:
-            try:
-                raw = line.split("time=")[-1].split("ms")[0].strip()
-                # Linux may have a trailing space before "ms"
-                times.append(float(raw.strip()))
-            except Exception:
-                pass
+def get_latency_loss_jitter(host=PING_HOST, count=8):
+    """
+    Estimate latency, packet loss, and jitter via repeated TCP probes.
+    Works in Docker without CAP_NET_RAW (no ICMP needed).
+    """
+    rtts = []
+    failed = 0
 
-        # Windows: "Lost = N (X% loss)"
-        # Linux:   "X% packet loss"
-        if "loss" in line.lower() or "Lost" in line:
-            try:
-                if "(" in line and "%" in line:
-                    # Windows format
-                    loss = float(line.split("(")[1].split("%")[0].strip())
-                elif "%" in line:
-                    # Linux format: "1 packets transmitted, 1 received, 0% packet loss"
-                    for part in line.split(","):
-                        if "%" in part:
-                            loss = float(part.strip().split("%")[0].strip())
-                            break
-            except Exception:
-                pass
-
-    return times, loss
-
-
-def get_latency_loss_jitter(host=PING_HOST, count=4):
-    """Single ping batch — returns (latency_ms, packet_loss_pct, jitter_ms)."""
-    try:
-        result = subprocess.run(
-            _ping_cmd(host, count),
-            capture_output=True, text=True, timeout=15
-        )
-        times, loss = _parse_ping_output(result.stdout)
-
-        if times:
-            latency = round(sum(times) / len(times), 2)
-            jitter  = round(float(np.std(times)), 2)
+    for _ in range(count):
+        rtt = _tcp_rtt(host)
+        if rtt is not None:
+            rtts.append(rtt)
         else:
-            latency = 0.0
-            jitter  = 0.0
+            failed += 1
 
-        return latency, loss, jitter
+    if rtts:
+        latency = round(float(np.mean(rtts)), 2)
+        jitter  = round(float(np.std(rtts)), 2)
+    else:
+        latency = 999.0
+        jitter  = 999.0
 
-    except Exception as e:
-        print(f"[ping error] {e}")
-        return 999.0, 100.0, 999.0
+    loss = round((failed / count) * 100, 1)
+    return latency, loss, jitter
 
 
 def get_bandwidth():
@@ -105,9 +101,9 @@ def get_dns_response(domain=DNS_TEST_DOMAIN):
     old_timeout = socket.getdefaulttimeout()
     try:
         socket.setdefaulttimeout(3)
-        start = time.time()
+        t0 = time.time()
         socket.gethostbyname(domain)
-        return round((time.time() - start) * 1000, 2)
+        return round((time.time() - t0) * 1000, 2)
     except Exception as e:
         print(f"[dns error] {e}")
         return 9999.0
@@ -116,19 +112,15 @@ def get_dns_response(domain=DNS_TEST_DOMAIN):
 
 
 def get_gateway_ping(gateway=GATEWAY):
-    """Pings the gateway/router and returns average RTT in ms."""
-    try:
-        result = subprocess.run(
-            _ping_cmd(gateway, 4),
-            capture_output=True, text=True, timeout=20
-        )
-        times, _ = _parse_ping_output(result.stdout)
-        if times:
-            return round(sum(times) / len(times), 2)
-        return 999.0
-    except Exception as e:
-        print(f"[gateway error] {e}")
-        return 999.0
+    """
+    Probe gateway reachability via TCP.
+    Returns RTT in ms, or 999.0 if unreachable.
+    """
+    rtt = _tcp_rtt(gateway, timeout=3.0)
+    if rtt is not None:
+        return rtt
+    print(f"[gateway] {gateway} unreachable on all probe ports")
+    return 999.0
 
 
 def get_connected_devices(network=NETWORK):
