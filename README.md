@@ -96,7 +96,29 @@ Live Metrics → LSTM Autoencoder → Anomaly Detected → LangChain Agent → D
 
 ---
 
-## 🚀 Quick Start (Local)
+## 🎯 Two Ways to Run
+
+### ☁️ Live Demo (no setup)
+**[Open the live app](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/)** → click **Start Monitoring** → use the **inject buttons** in the sidebar to trigger any scenario → watch the LSTM alert appear and the AI agent diagnose it in real time.
+
+> The cloud backend measures its own server network. Inject buttons simulate anomalies directly so the full AI pipeline runs for everyone with no setup.
+
+### 🖥️ Local Mode (real network detection)
+Run everything on your own machine. The LSTM monitors **your actual network** — run the manual trigger commands and watch it detect real conditions.
+
+```bash
+git clone https://github.com/NetworksTeam/network-anomaly-detection-.git
+cd network-anomaly-detection-
+cp .env.example .env   # add OPENAI_API_KEY
+docker compose up
+# open http://localhost:3000
+```
+
+Then use the manual trigger commands in the sidebar (bandwidth flood, DNS failure, packet loss) — the LSTM will detect them for real on your network.
+
+---
+
+## 🚀 Quick Start (Local — without Docker)
 
 ### Prerequisites
 - Python 3.11+
