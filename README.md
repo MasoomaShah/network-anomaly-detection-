@@ -14,7 +14,7 @@ pinned: false
 
 **Real-time network anomaly detection powered by LSTM autoencoders and autonomous LangChain agents**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://project-9370e.vercel.app/)
 [![Backend](https://img.shields.io/badge/Backend-HuggingFace%20Spaces-yellow?style=for-the-badge&logo=huggingface)](https://huggingface.co/spaces/mominazahid/networkagentic)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?style=for-the-badge&logo=githubactions)](https://github.com/MasoomaShah/network-anomaly-detection-/actions)
 [![Python](https://img.shields.io/badge/Python-3.11-green?style=for-the-badge&logo=python)](https://python.org)
@@ -99,7 +99,7 @@ Live Metrics → LSTM Autoencoder → Anomaly Detected → LangChain Agent → D
 ## 🎯 Two Ways to Run
 
 ### ☁️ Live Demo (no setup)
-**[Open the live app](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/)** → click **Start Monitoring** → use the **inject buttons** in the sidebar to trigger any scenario → watch the LSTM alert appear and the AI agent diagnose it in real time.
+**[Open the live app](https://project-9370e.vercel.app/)** → click **Start Monitoring** → use the **inject buttons** in the sidebar to trigger any scenario → watch the LSTM alert appear and the AI agent diagnose it in real time.
 
 > The cloud backend measures its own server network. Inject buttons simulate anomalies directly so the full AI pipeline runs for everyone with no setup.
 
@@ -252,6 +252,6 @@ A project demonstrating agentic AI applied to real-world network operations.
 
 <div align="center">
 
-**[🌐 Live Demo](https://networktroubleshooter-4gh8xjm7a-mominazd12-4665s-projects.vercel.app/) · [🤗 HF Space](https://huggingface.co/spaces/mominazahid/networkagentic) · [📁 GitHub](https://github.com/MasoomaShah/network-anomaly-detection-)**
+**[🌐 Live Demo](https://project-9370e.vercel.app/) · [🤗 HF Space](https://huggingface.co/spaces/mominazahid/networkagentic) · [📁 GitHub](https://github.com/MasoomaShah/network-anomaly-detection-)**
 
 </div>
